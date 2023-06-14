@@ -63,32 +63,44 @@ class RegisterView(APIView):
     def post(self, request):
         data = request.data
         email = data['email']
-
+        data = dict(data)
+        data2 = { key: value[0] for key, value in data.items() if type(value)==list}
+        if len(data2)>0:
+            data = data2
         if len(User.objects.filter(email=email)) == 0:
             user = User.objects.create_user(**data)
-            # Создание RefreshToken
+            # Create RefreshToken
             token = RefreshToken.for_user(user) 
-            # Отправка RefreshToken на почту
+            # Send RefreshToken to email
+            access = token.access_token
+            data = {
+            'refresh': str(token),
+            'access': str(access),
+            }
             send_email_with_token(str(token), email)
 
             return Response({'message': 'Registration saccess.\
-                            Пожалуйста, проверьте свою электронную почту для подтверждения.',
-                            }, status=status.HTTP_201_CREATED)
+                            Check mail'},
+                            data,
+                            status.HTTP_201_CREATED)
         return Response({'message': 'Email allready in db'})
 
 
-class VerifyView(APIView):
-    def get(self, request):
-        token = request.GET.get('token')
-        try:
-            refresh = RefreshToken(token)
-            access = refresh.access_token
+# class VerifyView(APIView):
+#     def get(self, request):
+#         token = request.GET.get('token')
+#         try:
+#             refresh = RefreshToken(token)
+#             access = refresh.access_token
+#             data = {
+#                 "refresh" :str(refresh),
+#                 "access": str(access)
+#                 }
+#             # Перенаправление пользователя на страницу подтверждения аутентификации с access token
+#             return Response({'message': 'Valid access', 'token': access}, data=data)
 
-            # Перенаправление пользователя на страницу подтверждения аутентификации с access token
-            return Response({'message': 'Valid access', 'token': access}).set_cookie(key='token', value=access)
-
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+#         except Exception as e:
+#             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 # class LoginView(APIView):
@@ -105,11 +117,16 @@ class VerifyView(APIView):
 
 #         if  check_password(password, user.password) or  password==user.password:
 #             token = RefreshToken.for_user(user)
+#             token['id'] = user.id
+#             token['email'] = user.email
+#             access = token.access_token
 #             response = Response()
 #             response.data = {
 #                 'message': 'login saccess',
+#                 'refresh': str(token),
+#                 'access': str(access),
 #             }
-#             response.set_cookie(key='token', value=token)
+#             response.set_cookie(key='token', value=access)
 #             return response
         
 #         raise AuthenticationFailed('Incorrect password')
@@ -127,26 +144,20 @@ class VerifyView(APIView):
     
 
 # class GetUser(APIView):
-#     permission_classes = (IsAuthenticated,)
+#     # permission_classes = (IsAuthenticated,)
 
 #     def get(self, request):
-#         token = request.COOKIES.get('token')
-
-#         payload = jwt.decode(
-#             token,
-#             settings.SIMPLE_JWT['SIGNING_KEY'],
-#             algorithms=[settings.SIMPLE_JWT['ALGORITHM']],
-#             )
     
-#         user = User.objects.filter(id=payload['user_id']).first()
+#         user = User.objects.filter(email=request.data['email']).first()
 #         serializer = UserSerializer(user)
 #         data = serializer.data
 
 #         return Response({"data":data})
     
 
-#     def put(self, request, pk):        
-#         user  =User.objects.filter(id=pk)
+#     def put(self, request):   
+
+#         user  = User.objects.get(email=request.data['email']).first()
 #         serializer = UserSerializer(user, data=request.data)
 #         if serializer.is_valid():
 #             serializer.save()
@@ -154,8 +165,8 @@ class VerifyView(APIView):
 #         return Response(serializer.errors, status=400)
     
 
-#     def delete(self, request, pk):        
-#         user = User.objects.filter(id=pk)
+#     def delete(self, request):        
+#         user = User.objects.filter(email=request.data['email'])
 #         if user is None:
 #             return Response({"message": "User not found"})
 #         user.delete()
@@ -163,7 +174,7 @@ class VerifyView(APIView):
 
     
 # class GetUsers(APIView):
-#     permission_classes = (IsAuthenticatedOrReadOnly,)
+#     # permission_classes = (IsAuthenticatedOrReadOnly,)
 
 #     def get(self, request):
 #         token = request.COOKIES.get('token')

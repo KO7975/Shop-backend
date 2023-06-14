@@ -94,7 +94,7 @@ DJOSER = {
     'PASSWORD_CHANGED_EMAIL_CONFIRMATION': True,
     'USERNAME_CHANGED_EMAIL_CONFIRMATION': True,
     'TOKEN_MODEL': None,
-    'EMAIL': {'activation': 'authentication.email.AwesomeActivationEmail',}
+    'EMAIL': {'activation': 'authentication.views.send_email_with_token',}
 }
 
 SIMPLE_JWT = {
