@@ -14,14 +14,16 @@
 ### - go to the backend dir where manage.py file stored
 
 ### - create file .env and inside it set :
-####    SECRET_KEY= random generated key
-####    EMAIL_HOST_USER= your email adress
-####    EMAIL_HOST_PASSWORD= your email host password
+####    * SECRET_KEY= random generated key
+####    * EMAIL_HOST_USER= your email adress
+####    * EMAIL_HOST_PASSWORD= your email host password (not your account password)
 
 
-### - now you can start project vith command  (python manage.py runserver)
+### - now you can start project with command  (python manage.py runserver)
 
 ### - if all done right You will see "Starting development server at http://127.0.0.1:8000/"
+
+### - You can visit admin page http://127.0.0.1:8000/admin and login with EMAIL: admin@example.com, PASSWORD: 123456
 
 ### - tape this http://127.0.0.1:8000/auth/schema/swagger-ui/ url into your browser and you will see all api functionality
 
