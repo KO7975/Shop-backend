@@ -13,6 +13,12 @@
 
 ### - go to the backend dir where manage.py file stored
 
+### - create file .env and inside it set :
+####    SECRET_KEY= random generated key
+####    EMAIL_HOST_USER= your email adress
+####    EMAIL_HOST_PASSWORD= your email host password
+
+
 ### - now you can start project vith command  (python manage.py runserver)
 
 ### - if all done right You will see "Starting development server at http://127.0.0.1:8000/"
