@@ -4,7 +4,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.hashers import check_password, make_password
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.views import APIView
+from rest_framework.views import APIView 
 from rest_framework.exceptions import AuthenticationFailed
 from .models import User
 from .serializer import UserSerializer
@@ -18,11 +18,7 @@ from rest_framework.parsers import JSONParser
 from .serializer import MyTokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-
     
-class MyTokenObtainPairView(TokenObtainPairView):
-    serializer_class =MyTokenObtainPairSerializer
-
 
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
@@ -69,21 +65,42 @@ class RegisterView(APIView):
             data = data2
         if len(User.objects.filter(email=email)) == 0:
             user = User.objects.create_user(**data)
-            # Create RefreshToken
-            token = RefreshToken.for_user(user) 
+            token = get_tokens_for_user(user)
             # Send RefreshToken to email
-            access = token.access_token
-            data = {
-            'refresh': str(token),
-            'access': str(access),
-            }
-            send_email_with_token(str(token), email)
+            send_email_with_token(str(token['refresh']), email)
 
-            return Response({'message': 'Registration saccess.\
-                            Check mail'},
-                            data,
+            return Response({'message': 'Registration saccess. Check mail.'},
+                            token,
                             status.HTTP_201_CREATED)
+        
         return Response({'message': 'Email allready in db'})
+
+
+# class FacebookLogin(APIView):
+#     @psa()
+#     def post(self, request, backend):
+#         token = request.data.get('access_token')
+#         user = request.backend.do_auth(token)
+
+#         if user:
+#             return Response(get_tokens_for_user(user))
+#         else:
+#             return Response({'error': 'Invalid token'}, status=400)
+        
+
+# class GoogleLogin(APIView):
+#     @psa()
+#     def post(self, request, backend):
+#         token = request.data.get('access_token')
+#         user = request.backend.do_auth(token)
+
+#         if user:
+#             return Response(get_tokens_for_user(user))
+#         else:
+#             return Response({'error': 'Invalid token'}, status=400)
+        
+
+
 
 
 # class VerifyView(APIView):

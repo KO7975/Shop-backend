@@ -18,6 +18,7 @@ class UserAdmin(UserAdmin):
                 'fields': ( 
                     'first_name', 
                     'last_name', 
+                    'phone',
                     "gender", 
                     'date_of_birth',
                     'picture',
@@ -31,6 +32,7 @@ class UserAdmin(UserAdmin):
             "Custom Fields",
             {
                 'fields': (  
+                    'phone',
                     "gender", 
                     'date_of_birth',
                     'picture',
