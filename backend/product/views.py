@@ -6,7 +6,8 @@ from rest_framework.permissions import AllowAny
 from .models import (
     Product,
     Stock, 
-    Category
+    Category,
+    Attribute,
 )
 
 
@@ -43,23 +44,44 @@ class CategoryView(APIView):
 class ProductCategoryView(APIView):
     permission_classes = (AllowAny,)
 
-    def get(self, request, category_pk):
-        category_products = Product.objects.filter(categoty_id_id=category_pk).values()
+    def get(self, request, category_id):
+        category_products = Product.objects.filter(categoty_id_id=category_id).values()
+        category = Category.objects.filter(perent_id=category_id)  
+        
+        all_categories = [i.id for i in category ]
+        all_categories.append(category_id)
 
-        if category_products:
-            return Response({'products': list(category_products)})
+        all_products = []
+        for id in all_categories:
+            for i in Product.objects.filter(categoty_id_id=id).values():
+                if i not in all_products:
+                    all_products.append(i)
+
+        children_category = {i.name:i.id for i in category if i.id != category_id}
+        sub_products = {name:Product.objects.filter(categoty_id_id=id).values() for name,id in children_category.items()}
+        
+        if category_products or children_category:
+            return Response({
+                'all_products': all_products,
+                'parent': list(category_products),
+                'sub_categories': children_category,
+                'sub_products': sub_products
+                })
         else:
-            return Response({'message': 'no selected intems in this category'})
+            return Response({'message': 'This category DoesNotExist'})
         
 
 class StockView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = (AllowAny,)
 
     def get(self, request, pk):
         stock = Stock.objects.filter(id=pk).values()
+        product = Product.objects.get(stocke_id=pk).name
 
         if len(stock) != 0 :
-            return Response({'stock': stock[0]})
+            return Response({f'{product}': stock[0]})
         else:
             return Response({'message': 'stock not found'})
+        
+
 

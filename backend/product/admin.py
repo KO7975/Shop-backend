@@ -7,10 +7,7 @@ from .models import Category, Product, Stock, Attribute, TextProductAttribute, I
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ('name', 'image_tag')
     prepopulated_fields = {"slug": ("name",)}
-    filter_horizontal = ('products',)
-
-    def image_tag(self, obj):
-        return mark_safe(f'<img src="{obj.image.url}" width="50" height="50" />')
+    # filter_horizontal = ('products',)
 
 
 @admin.register(Product)
@@ -19,10 +16,6 @@ class ProductAdmin(admin.ModelAdmin):
     search_fields = ('name', )
     prepopulated_fields = {"slug": ("name",)}
 
-    def image_tag(self, obj):
-        return mark_safe(f'<img src="{obj.image.url}" width="50" height="60" />')
-
-
 
 @admin.register(Stock)
 class StockAdmin(admin.ModelAdmin):
@@ -30,7 +23,6 @@ class StockAdmin(admin.ModelAdmin):
 
     def name(self, obj):
         return obj.ptoduct_id.name
-
 
 
 @admin.register(Attribute)
