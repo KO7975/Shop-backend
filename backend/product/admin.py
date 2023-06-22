@@ -12,14 +12,14 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'description', 'created', 'updated', 'image_tag')
+    list_display = ('name', 'description', 'price', 'created', 'updated', 'image_tag')
     search_fields = ('name', )
     prepopulated_fields = {"slug": ("name",)}
 
 
 @admin.register(Stock)
 class StockAdmin(admin.ModelAdmin):
-    list_display= ('name', 'quantity', 'price', 'defective', 'created', 'updated' )
+    list_display= ('name', 'quantity', 'defective', 'created', 'updated' )
 
     def name(self, obj):
         return obj.ptoduct_id.name

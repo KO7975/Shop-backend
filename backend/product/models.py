@@ -42,6 +42,7 @@ class Product(models.Model):
     image= models.ImageField(verbose_name='Product picture', upload_to='product/photos', blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     categoty_id = models.ForeignKey(Category,  on_delete=models.CASCADE,  null=True)
+    price = models.DecimalField(decimal_places=3, max_digits=10, null=True, blank=True)
     # stocke = models.ForeignKey('Stock', on_delete=models.CASCADE, blank=True, null=True)
     atr = models.ForeignKey('Attribute', on_delete=models.CASCADE, blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
@@ -90,8 +91,7 @@ class Stock(models.Model):
     quantity = models.IntegerField(null=True,)
     weight = models.DecimalField(decimal_places=3, max_digits=10, null=True, blank=True)
     demensions = models.CharField(max_length=255, blank=True)
-    price = models.DecimalField(decimal_places=3, max_digits=10)
-    defective = models.BooleanField()
+    defective = models.BooleanField(default=False, null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
