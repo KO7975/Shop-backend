@@ -1,6 +1,30 @@
 from django.contrib import admin
 from django.utils.safestring import mark_safe
-from .models import Category, Product, Stock, Attribute, TextProductAttribute, IntegerProductAttribute
+from .models import(
+    Category,
+    Product,
+    Stock,
+    Attribute,
+    TextProductAttribute,
+    IntegerProductAttribute,
+    Like,
+    DisLike,
+    )
+
+
+# @admin.register(Like)
+# class LikeAdmin(admin.ModelAdmin):
+#     list_display = ('name', 'created_at')
+
+#     def name(self, obj):
+#         return obj.user.username
+    
+# @admin.register(DisLike)
+# class DisLikeAdmin(admin.ModelAdmin):
+#     list_display = ('name', 'created_at')
+
+#     def name(self, obj):
+#         return obj.user.username
 
 
 @admin.register(Category)
