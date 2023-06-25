@@ -1,15 +1,13 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import User
-from .forms import UserCreationForm, UserChangeForm
-
 
 
 class UserAdmin(UserAdmin):
     model = User
     # add_form = UserCreationForm
     # form = UserChangeForm
-    # list_display = ["id", "email", "updated_at", "is_staff"]
+    list_display = ["email","first_name", "last_name", "updated_at", "is_staff", "is_active"]
     add_fieldsets = (
         *UserAdmin.add_fieldsets,
         (

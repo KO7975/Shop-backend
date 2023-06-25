@@ -65,7 +65,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'markdown',
     'djoser',
-    # 'jwt',
+    'jwt',
 
 ]
 

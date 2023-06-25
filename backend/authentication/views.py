@@ -41,7 +41,7 @@ def send_email_with_token(token, recipient_email):
     message['To'] = recipient_email
 
     # Тело сообщения с токеном
-    message.set_content(f'Для подтверждения аутентификации перейдите по ссылке: http://127.0.0.1:8000/token/verify?token={token}')
+    message.set_content(f'Для подтверждения аутентификации перейдите по ссылке: http://127.0.0.1:8000/auth/register/apruve?token={token}&email={recipient_email}')
 
     # Отправка сообщения 
     with smtplib.SMTP(smtp_server, smtp_port) as server:
@@ -61,19 +61,55 @@ class RegisterView(APIView):
         email = data['email']
         data = dict(data)
         data2 = { key: value[0] for key, value in data.items() if type(value)==list}
+
         if len(data2)>0:
             data = data2
+
         if len(User.objects.filter(email=email)) == 0:
+            data['is_active'] = False
             user = User.objects.create_user(**data)
             token = get_tokens_for_user(user)
             # Send RefreshToken to email
             send_email_with_token(str(token['refresh']), email)
 
-            return Response({'message': 'Registration saccess. Check mail.'},
-                            token,
-                            status.HTTP_201_CREATED)
+            return Response({'message': 'Registration saccess. Check mail.'})
         
         return Response({'message': 'Email allready in db'})
+
+
+
+class RegistrApruveView(APIView):
+    permission_classes = (AllowAny,)
+
+    def get(self, request):
+
+        token = request.GET.get('token')
+        email = request.GET.get('email' )
+
+        try:
+            refresh = RefreshToken(token)
+            access = refresh.access_token
+            data = {
+                "refresh" :str(refresh),
+                "access": str(access)
+                }
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(id=payload['user_id'])
+            user.is_active = True
+            user.save()
+            return Response({'message': 'Valid access', 'token': data})
+        
+        except User.DoesNotExist as e:
+            user = User.objects.get(email = email)
+            user.delete()
+            return Response({'message': f'{e}'})
+
+
 
 
 # class FacebookLogin(APIView):
