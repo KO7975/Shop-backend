@@ -2,6 +2,7 @@ from django.db.models import Count
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
+import datetime
 
 from .serializer import CommentSerializer, ProductSerializer, CategorySerializer
 
@@ -23,14 +24,34 @@ def get_top_10_products():
     top_products = Product.objects.annotate(like_count=Count('like')).order_by('-like_count')[:10]
     return top_products
 
+def get_new_added():
+    today = datetime.datetime.now().date()
+    start_date = today - datetime.timedelta(days=30)
+    new_10 = Product.objects.all().order_by('-updated')[:10]
+    days_30 = Product.objects.filter(updated__gte= start_date, updated__lte=today)
+    if days_30.count() > new_10.count():
+        return days_30
+    else:
+        return new_10
+
 
 class ProductsView(APIView):
     permission_classes = (AllowAny,)
 
     def get(self, request):
-        products = Product.objects.all().values()
-        top_10 = get_top_10_products().values()
-        return Response({'all_products': list(products), 'top_10':top_10})
+        products = Product.objects.all()
+        top_10 = get_top_10_products()
+        new_added = get_new_added()
+
+        serializer1 = ProductSerializer(products, many=True)
+        serializer2 = ProductSerializer(top_10, many=True) 
+        serializer3 = ProductSerializer(new_added, many=True)
+
+        return Response({
+            'all_products': serializer1.data,
+            'top_10': serializer2.data,
+            'new_10': serializer3.data
+            })
     
 
 class ProductView(APIView):
@@ -40,13 +61,13 @@ class ProductView(APIView):
         try:
             product = Product.objects.filter(id=product_id)
 
-            likes = Like.objects.filter(product=product[0]).count()
-            dislikes = DisLike.objects.filter(product=product[0]).count()
-
+            # likes = Like.objects.filter(product=product[0]).count()
+            # dislikes = DisLike.objects.filter(product=product[0]).count()
+            serializer = ProductSerializer(product, many=True)
             return Response({
-                'product': product.values()[0],
-                'likes':likes,
-                'dislikes': dislikes
+                'product': serializer.data,
+                # 'likes':likes,
+                # 'dislikes': dislikes
                 })
         
         except Product.DoesNotExist:
@@ -65,6 +86,7 @@ class CommentAPIView(APIView):
             return Response({"message": "Product not found."})
 
         serializer = self.serializer_class(data=request.data)
+        
         if serializer.is_valid():
             serializer.save(user=request.user, product=product)
             return Response(serializer.data, status=201)
@@ -154,8 +176,7 @@ class ProductLikeView(APIView):
             elif DisLike.objects.filter(user=request.user, product=product).exists():
                 DisLike.objects.filter(user=request.user, product=product).delete()
             
-            like = Like(user=request.user, product=product)
-            like.save()
+            like, created = Like.objects.get_or_create(user=request.user, product=product)
 
             return Response({"message": "Product liked successfully."})
 

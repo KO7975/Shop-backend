@@ -4,13 +4,19 @@ from .views import(
     OrderTotalPriceView,
     OrderItemDeleteView,
     OrderShippingAdressView,
+    OrderItemQuantityChangeView,
+    AddToOrderView,
 )   
 
 
 urlpatterns = [
     path('', OrderItemDetailView.as_view(), name='cart-detail'),
 
-    path('total-price', OrderTotalPriceView.as_view(), name='cart-total-price'),
+    path('new-quantity/<int:product_id>', OrderItemQuantityChangeView.as_view(), name='change_quantity'),
+
+    path('add-to-cart/<int:product_id>', AddToOrderView.as_view(), name='add_to_cart'),
+
+    path('total-price', OrderTotalPriceView.as_view(), name='cart_total_price'),
 
     path('remove/<int:pk>', OrderItemDeleteView.as_view(), name='remove'),
     

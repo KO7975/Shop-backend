@@ -43,7 +43,7 @@ class ProductAdmin(admin.ModelAdmin):
 
 @admin.register(Stock)
 class StockAdmin(admin.ModelAdmin):
-    list_display= ('name', 'quantity', 'defective', 'created', 'updated' )
+    list_display= ('name', 'quantity', 'total_price', 'defective', 'created', 'updated' )
 
     def name(self, obj):
         return obj.ptoduct_id.name

@@ -44,7 +44,7 @@ class Product(models.Model):
     image= models.ImageField(verbose_name='Product picture', upload_to='product/photos', blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     categoty_id = models.ForeignKey(Category,  on_delete=models.CASCADE,  null=True)
-    price = models.DecimalField(decimal_places=3, max_digits=10, null=True, blank=True)
+    price = models.DecimalField(decimal_places=2, max_digits=10, null=True, blank=True)
     likes = models.ManyToManyField(User, through='Like', related_name='liked_products')
     dislikes = models.ManyToManyField(User,through='DisLike', related_name='disliked_product', blank=True)
     atr = models.ForeignKey('Attribute', on_delete=models.CASCADE, blank=True, null=True)
@@ -53,7 +53,7 @@ class Product(models.Model):
 
     def __str__(self) -> str:
         return self.name
-    
+
     def image_tag(self):
         return img_tag(self)
    
@@ -144,3 +144,7 @@ class Stock(models.Model):
 
     def __str__(self) -> str:
         return self.ptoduct_id.name
+
+    def total_price(self):
+        total = self.quantity * self.ptoduct_id.price
+        return total

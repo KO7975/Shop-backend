@@ -4,7 +4,6 @@ from rest_framework.serializers import (
     ModelSerializer,
     SerializerMethodField
     )
-
 from .models import (
     Product,
     Category,
@@ -13,26 +12,39 @@ from .models import (
     )
 
 
+
 class ProductSerializer(ModelSerializer):
+    likes = SerializerMethodField()
+    dislikes = SerializerMethodField()
 
     class Meta:
         model = Product
         fields = (
             'id',
             'name',
+            'price',
             'description',
             'image',
             'categoty_id',
             'atr',
+            'likes',
+            'dislikes',
             'created',
             'updated',
             )
 
+    def get_likes(self, obj):
+        print(obj.likes.count())
+        return obj.likes.count()
+
+    def get_dislikes(self, obj):
+        return obj.dislikes.count()
+
 
 
 class CommentSerializer(ModelSerializer):
-    likes_count = SerializerMethodField()
-    dislikes_count = SerializerMethodField()
+    likes = SerializerMethodField()
+    dislikes = SerializerMethodField()
 
     class Meta:
         model = Comment
@@ -42,14 +54,14 @@ class CommentSerializer(ModelSerializer):
             'product',
             'content',
             'created_at',
-            'likes_count',
-            'dislikes_count',
+            'likes',
+            'dislikes',
             )
 
-    def get_likes_count(self, obj):
+    def get_likes(self, obj):
         return obj.likes.count()
 
-    def get_dislikes_count(self, obj):
+    def get_dislikes(self, obj):
         return obj.dislikes.count()
 
 
@@ -71,6 +83,7 @@ class CategorySerializer(ModelSerializer):
             'children',
             'image',
             )
+
 
 
 class StockSerializer(ModelSerializer):
