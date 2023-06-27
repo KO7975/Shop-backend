@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView 
 from .models import User
-from .serializer import UserSerializer
+from .serializer import UserSerializer, EmailVerifySerializer
 from rest_framework.permissions import AllowAny
 import jwt
 import smtplib
@@ -79,45 +79,49 @@ class RegisterView(APIView):
         return Response({'message': 'Email allready in db'}, status=201)
     
 
-    @extend_schema(
-            request={'token':'refresh', 'email': 'email@example.com'},
-            description='User mail upproved from email. Make user is_active = True',
-            methods=["GET"],
-            parameters=[
-                OpenApiParameter(name='refresh', description='Token', required=True),
-                OpenApiParameter(name='email', description='Email adress', required=True),
-            ],
-            responses={200:OpenApiResponse( description='return token: refresh, access',),
-                       400:OpenApiResponse(description='Token not valid'),
-                       500:OpenApiResponse(description='UserDoesNotExist')
-                       }
-    )
-    def get(self, request):
-        token = request.GET.get('token')
-        email = request.GET.get('email' )
 
-        try:
-            refresh = RefreshToken(token)
-            access = refresh.access_token
-            data = {
-                "refresh" :str(refresh),
-                "access": str(access)
-                }
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+class EmailVerifyView(APIView):
+        permission_classes = [AllowAny]
+
+        @extend_schema(
+                request=EmailVerifySerializer,
+                description='User mail upproved from email. Make user is_active = True',
+                methods=["GET"],
+                parameters=[
+                    OpenApiParameter(name='refresh', description='Token', required=True),
+                    OpenApiParameter(name='email', description='Email adress', required=True),
+                ],
+                responses={200:OpenApiResponse( description='return token: refresh, access',),
+                        400:OpenApiResponse(description='Token not valid'),
+                        500:OpenApiResponse(description='UserDoesNotExist')
+                        }
+        )
+        def get(self, request):
+            token = request.GET.get('token')
+            email = request.GET.get('email' )
+
+            try:
+                refresh = RefreshToken(token)
+                access = refresh.access_token
+                data = {
+                    "refresh" :str(refresh),
+                    "access": str(access)
+                    }
+                payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+                
+            except Exception as e:
+                return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                user = User.objects.get(id=payload['user_id'])
+                user.is_active = True
+                user.save()
+                return Response({'message': 'Valid access', 'token': data})
             
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            user = User.objects.get(id=payload['user_id'])
-            user.is_active = True
-            user.save()
-            return Response({'message': 'Valid access', 'token': data})
-        
-        except User.DoesNotExist as e:
-            user = User.objects.get(email = email)
-            user.delete()
-            return Response({'message': f'{e}'}, status=500)
+            except User.DoesNotExist as e:
+                user = User.objects.get(email = email)
+                user.delete()
+                return Response({'message': f'{e}'}, status=500)
 
 
 
