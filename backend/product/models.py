@@ -17,10 +17,8 @@ def img_tag(self):
 class Category(models.Model):
     name = models.CharField(max_length=255, blank=True)
     slug = models.SlugField(max_length=255, blank=True)
-    perent_id = models.ForeignKey('self', on_delete=models.CASCADE,  blank=True, related_name='children')
-    # products = models.ManyToManyField('Product', blank=True, related_name='product_desc')
+    perent_id = models.ForeignKey('self', on_delete=models.CASCADE,  blank=True, null=True, related_name='children')
     image= models.ImageField(verbose_name='Category picture', upload_to='category/photos', blank=True, null=True)
-
 
     class Meta:
         verbose_name_plural = 'categories'
@@ -45,9 +43,9 @@ class Product(models.Model):
     description = models.TextField(blank=True, null=True)
     categoty_id = models.ForeignKey(Category,  on_delete=models.CASCADE,  null=True)
     price = models.DecimalField(decimal_places=2, max_digits=10, null=True, blank=True)
-    likes = models.ManyToManyField(User, through='Like', related_name='liked_products')
+    likes = models.ManyToManyField(User, through='Like', related_name='liked_products', blank=True)
     dislikes = models.ManyToManyField(User,through='DisLike', related_name='disliked_product', blank=True)
-    atr = models.ForeignKey('Attribute', on_delete=models.CASCADE, blank=True, null=True)
+    properties = models.ManyToManyField('ProductAttribute', related_name='atributes', blank=True, default=None)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
@@ -78,8 +76,8 @@ class Comment(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
-    likes = models.ManyToManyField(User, related_name='comment_likes', blank=True)
-    dislikes = models.ManyToManyField(User, related_name='comment_dislikes', blank=True)
+    likes = models.ManyToManyField(User, through='CommentLike',related_name='comment_likes', blank=True)
+    dislikes = models.ManyToManyField(User, through='CommentDislike', related_name='comment_dislikes', blank=True)
 
     def __str__(self):
         return f"Comment by {self.user.username} on {self.product.name}"  
@@ -104,33 +102,29 @@ class CommentDislike(models.Model):
 
 
 
-
-class  TextProductAttribute(models.Model):
-    product_id = models.ForeignKey(Product, on_delete=models.CASCADE, blank=True, null=True)
+class  ProductAttribute(models.Model):
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True)
+    attribute = models.ForeignKey('Attribute', on_delete=models.CASCADE) 
     value = models.CharField(max_length=255, blank=True)
-    created = models.DateTimeField(auto_now_add=True)
-    updated = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
-        return self.value
-
-
-class  IntegerProductAttribute(models.Model):
-    product_id = models.ForeignKey(Product, on_delete=models.CASCADE, blank=True, null=True)
-    value = models.IntegerField()
-    created = models.DateTimeField(auto_now_add=True)
-    updated = models.DateTimeField(auto_now=True)
+        if self.attribute.perent_id:
+            return f'{self.category} {self.attribute.perent_id} {self.attribute.name} {self.value}'
+        else:
+            return f'{self.category} {self.attribute.name} {self.value}'
     
-    def __str__(self) -> str:
-        return self.value
-
+    
 
 class Attribute(models.Model):
     name = models.CharField(max_length=200, blank=True, null=True)
-    int = models.ForeignKey(IntegerProductAttribute, on_delete=models.CASCADE,blank=True, null=True)
-    text = models.ForeignKey(TextProductAttribute, on_delete=models.CASCADE, blank=True, null=True)
+    perent_id = models.ForeignKey('self', on_delete=models.CASCADE,  blank=True, null=True, related_name='children')
+
     def __str__(self) -> str:
-        return self.name
+        if not self.perent_id:
+            return self.name
+        else:
+            return f'{self.perent_id} {self.name}'
+
 
 
 class Stock(models.Model):

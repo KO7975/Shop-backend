@@ -15,7 +15,6 @@ from .models import (
     Comment,
     CommentLike,
     CommentDislike,
-    Attribute,
 )
 
 
@@ -23,6 +22,7 @@ from .models import (
 def get_top_10_products():
     top_products = Product.objects.annotate(like_count=Count('like')).order_by('-like_count')[:10]
     return top_products
+
 
 def get_new_added():
     today = datetime.datetime.now().date()
@@ -60,15 +60,9 @@ class ProductView(APIView):
     def get(self, request, product_id):
         try:
             product = Product.objects.filter(id=product_id)
-
-            # likes = Like.objects.filter(product=product[0]).count()
-            # dislikes = DisLike.objects.filter(product=product[0]).count()
             serializer = ProductSerializer(product, many=True)
-            return Response({
-                'product': serializer.data,
-                # 'likes':likes,
-                # 'dislikes': dislikes
-                })
+
+            return Response({'product': serializer.data,})
         
         except Product.DoesNotExist:
             return Response({'message': 'product not found'})
@@ -77,21 +71,39 @@ class ProductView(APIView):
 
 class CommentAPIView(APIView):
     permission_classes = [IsAuthenticated]
-    serializer_class = CommentSerializer
 
     def post(self, request, product_id):
         try:
             product = Product.objects.get(id=product_id)
-        except Product.DoesNotExist:
-            return Response({"message": "Product not found."})
 
-        serializer = self.serializer_class(data=request.data)
+        except Product.DoesNotExist:
+            return Response({"message": "Product not found."}, status=500)
         
-        if serializer.is_valid():
-            serializer.save(user=request.user, product=product)
-            return Response(serializer.data, status=201)
-        else:
-            return Response(serializer.errors, status=400)
+        try:
+            comment = request.data['content']
+            comment, created = Comment.objects.get_or_create(
+                user=request.user,
+                product=product,
+                content= comment,
+                )
+            return Response({'message': 'comment created'}, status=200)
+        
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+        
+
+    def get(self, request, product_id):
+        try:
+            product = Product.objects.get(id=product_id)
+
+        except Product.DoesNotExist:
+            return Response({"message": "Product not found."}, status=500)
+        
+        comment = Comment.objects.filter(product=product)
+        serializer = CommentSerializer(comment, many=True)
+
+        return Response(serializer.data)
+
         
            
 
@@ -100,10 +112,6 @@ class CategoryView(APIView):
 
     def get(self, request):
         categories = Category.objects.all().values()
-
-        # cat = [Category.objects.filter(id=i['id']).values()['id'] for i in list(categories)\
-        #         if i['perent_id_id'] == None \
-        #             or i['id'] ==i ['perent_id_id']]
         cat = []
 
         for i in categories:
@@ -111,8 +119,8 @@ class CategoryView(APIView):
                 cat.append(i['id'])
 
         category = Category.objects.in_bulk(id_list=cat, field_name='id').values()
-
         serializer = CategorySerializer(category, many=True)
+
         return Response(serializer.data)
 
 
@@ -167,7 +175,6 @@ class ProductLikeView(APIView):
 
     def post(self, request, product_id):
         try:
-
             product = Product.objects.get(id=product_id)
 
             if Like.objects.filter(user=request.user, product=product).exists():
@@ -190,7 +197,6 @@ class ProductDislikeView(APIView):
 
     def post(self, request, product_id):
         try:
-
             product = Product.objects.get(id=product_id)
 
             if DisLike.objects.filter(user=request.user, product=product).exists():
@@ -212,38 +218,46 @@ class ProductDislikeView(APIView):
 class LikeCommentAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, comment_id):
+    def post(self, request, product_id, comment_id):
         try:
             comment = Comment.objects.get(id=comment_id)
-
         except Comment.DoesNotExist:
-            return Response({"message": "Comment not found."})
-
-        like, created = CommentLike.objects.get_or_create(user=request.user, comment=comment)
+            return Response({"message": "Comment not found."}, status=500)
         
-        if created:
-            return Response({"message": "Comment liked successfully."})
-        else:
-            return Response({"message": "You have already liked this comment."})
+        if CommentLike.objects.filter(user=request.user, comment=comment).exists():  
+            return Response({"message": "You have already liked this comment."}, status=201)
+        
+        elif CommentDislike.objects.filter(user=request.user, comment=comment).exists():
+            CommentDislike.objects.filter(user=request.user, comment=comment).delete()
+
+        like, created = CommentLike.objects.get_or_create(user=request.user, comment=comment)  
+
+        return Response({"message": "Comment liked successfully."})
+
+
 
 
 
 class DislikeCommentAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, comment_id):
+    def post(self, request, product_id, comment_id):
         try:
             comment = Comment.objects.get(id=comment_id)
 
+            if CommentDislike.objects.filter(user=request.user, comment=comment).exists():
+                return Response({"message": "You have already disliked this comment."})
+            
+            elif CommentLike.objects.filter(user=request.user, comment=comment).exists():
+                CommentLike.objects.filter(user=request.user, comment=comment).delete()
+            
+            dislike = CommentDislike(user=request.user, comment=comment)
+            dislike.save()
+
+            return Response({"message": "Comment disliked successfully."})
+
         except Comment.DoesNotExist:
             return Response({"message": "Comment not found."})
-
-        dislike, created = CommentDislike.objects.get_or_create(user=request.user, comment=comment)
-        
-        if created:
-            return Response({"message": "Comment disliked successfully."})
-        else:
-            return Response({"message": "You have already disliked this comment."})
 
 
 

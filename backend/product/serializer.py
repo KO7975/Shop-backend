@@ -26,7 +26,7 @@ class ProductSerializer(ModelSerializer):
             'description',
             'image',
             'categoty_id',
-            'atr',
+            'properties',
             'likes',
             'dislikes',
             'created',
@@ -34,7 +34,6 @@ class ProductSerializer(ModelSerializer):
             )
 
     def get_likes(self, obj):
-        print(obj.likes.count())
         return obj.likes.count()
 
     def get_dislikes(self, obj):

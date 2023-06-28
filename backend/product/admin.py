@@ -5,8 +5,8 @@ from .models import(
     Product,
     Stock,
     Attribute,
-    TextProductAttribute,
-    IntegerProductAttribute,
+    ProductAttribute,
+    Comment,
     Like,
     DisLike,
     )
@@ -37,6 +37,7 @@ class CategoryAdmin(admin.ModelAdmin):
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = ('name', 'description', 'price', 'created', 'updated', 'image_tag')
+    filter_horizontal = ('properties',)
     search_fields = ('name', )
     prepopulated_fields = {"slug": ("name",)}
 
@@ -51,18 +52,15 @@ class StockAdmin(admin.ModelAdmin):
 
 @admin.register(Attribute)
 class AttributeAdmin(admin.ModelAdmin):
-    list_display= ('name', )
+    list_display= ('__str__', )
 
 
-@admin.register(TextProductAttribute)
-class TextProductAttributeAdmin(admin.ModelAdmin):
-    list_display = ( 'value', 'created', 'updated' )
+@admin.register(ProductAttribute)
+class ProductAttributeAdmin(admin.ModelAdmin):
+    list_display = ('attribute', 'category','value')
+
+@admin.register(Comment)
+class CommentAdmin(admin.ModelAdmin):
+    list_display = ('user', 'product', 'content', 'created_at')
 
 
-@admin.register(IntegerProductAttribute)
-class IntegerProductAttributeAdmin(admin.ModelAdmin):
-    list_display = ( 'value', 'created', 'updated' )
-
-
-
-# admin.site.register(Category, CategoryAdmin)
