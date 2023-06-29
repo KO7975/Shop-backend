@@ -160,11 +160,11 @@ class StockView(APIView):
     permission_classes = (AllowAny,)
 
     def get(self, request, pk):
-        stock = Stock.objects.filter(id=pk).values()
-        product = Product.objects.get(stocke_id=pk).name
+        stock = Stock.objects.filter(id=pk).values().first()
+        product = Product.objects.get(stock=pk).name
 
         if len(stock) != 0 :
-            return Response({f'{product}': stock[0]})
+            return Response({f'{product}': stock})
         else:
             return Response({'message': 'stock not found'})
 

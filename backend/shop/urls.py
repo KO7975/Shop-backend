@@ -6,6 +6,8 @@ from .views import(
     OrderShippingAdressView,
     OrderItemQuantityChangeView,
     AddToOrderView,
+    OrderConfirmView,
+    OrderStatusView,
 )   
 
 
@@ -21,4 +23,9 @@ urlpatterns = [
     path('remove/<int:pk>', OrderItemDeleteView.as_view(), name='remove'),
     
     path('adress', OrderShippingAdressView.as_view(), name='adress'),
+
+    path('confirm', OrderConfirmView.as_view(), name='order_confirm'),
+
+    path('status', OrderStatusView.as_view(), name='order_status'),
+
 ]

@@ -43,8 +43,8 @@ class Product(models.Model):
     description = models.TextField(blank=True, null=True)
     categoty_id = models.ForeignKey(Category,  on_delete=models.CASCADE,  null=True)
     price = models.DecimalField(decimal_places=2, max_digits=10, null=True, blank=True)
-    likes = models.ManyToManyField(User, through='Like', related_name='liked_products', blank=True)
-    dislikes = models.ManyToManyField(User,through='DisLike', related_name='disliked_product', blank=True)
+    # likes = models.ManyToManyField(User, through='Like', related_name='liked_products', blank=True)
+    # dislikes = models.ManyToManyField(User,through='DisLike', related_name='disliked_product', blank=True)
     properties = models.ManyToManyField('ProductAttribute', related_name='atributes', blank=True, default=None)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
@@ -130,6 +130,7 @@ class Attribute(models.Model):
 class Stock(models.Model):
     ptoduct_id = models.OneToOneField(to=Product,  on_delete=models.CASCADE, verbose_name='item')
     quantity = models.IntegerField(null=True,)
+    reserved_quantity = models.IntegerField(null=True,)
     weight = models.DecimalField(decimal_places=3, max_digits=10, null=True, blank=True)
     demensions = models.CharField(max_length=255, blank=True)
     defective = models.BooleanField(default=False, null=True, blank=True)
@@ -137,7 +138,7 @@ class Stock(models.Model):
     updated = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
-        return self.ptoduct_id.name
+        return str(self.ptoduct_id)
 
     def total_price(self):
         total = self.quantity * self.ptoduct_id.price

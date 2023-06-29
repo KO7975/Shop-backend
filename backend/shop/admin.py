@@ -8,7 +8,7 @@ class ShippingAddresAdmin(admin.ModelAdmin):
 
 
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ['customer','date_order', 'calculate_total_price','complete']
+    list_display = ['customer','date_order', 'calculate_total_price','status','complete']
 
 
 class OrderItemAdmin(admin.ModelAdmin):

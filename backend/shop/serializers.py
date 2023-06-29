@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.db import models
 from .models import Product, OrderItem, Order, ShippingAddres
 from rest_framework.exceptions import ValidationError
 
@@ -12,11 +13,13 @@ class ProductSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
-        fields = ('id', 'castomer', 'complete', 'transaction_id')
+        fields = ('id','complete', 'transaction_id', 'status')
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
     product = ProductSerializer()
+    order = OrderSerializer()
+    # email = models.CharField(max_length=100)
     # order = OrderSerializer()
 
     class Meta:

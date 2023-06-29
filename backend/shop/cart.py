@@ -1,7 +1,8 @@
 from decimal import Decimal
 from django.conf import settings
 from shop.models import Product
-
+import os
+import base64
 
 
 class Cart(object):
@@ -80,3 +81,9 @@ class Cart(object):
         # удаление корзины из сессии
         del self.session[settings.SHOP_SESSION_ID]
         self.session.modified = True
+
+
+    def secret(self):
+        key = os.urandom(32)
+        secret_key = base64.b32encode(key).decode('utf-8')
+        return secret_key

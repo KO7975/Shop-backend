@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from .models import OrderItem, Order, ShippingAddres
 from .serializers import OrderItemSerializer, OrderShippingSerializer
-from product.models import Product
+from product.models import Product, Stock
 from authentication.models import User
 from django.conf import settings
 from .cart import Cart
@@ -19,31 +19,32 @@ class AddToOrderView(APIView):
     def post(self, request, product_id):
         product = Product.objects.get(id=product_id)
 
-        product_id = request.data['product_id']
         quantity = request.data['quantity']
+        stoke = Stock.objects.get(ptoduct_id=product)
 
+        if not stoke.quantity >= int(quantity):
+            return Response({'message': f'Stock quantyti = {stoke.quantity} lover than order quantity = {quantity}'}, status=500)  
+        
         if request.user.is_authenticated:
             order, create = Order.objects.get_or_create(
                 customer_id=request.user.id,
                 complete=False
                 )
-            order_item, created = OrderItem.objects.get_or_create(
-                order=order,
-                product=product,
-                quantity=quantity,
-                )
-            order_item.save()
- 
+
+            if not OrderItem.objects.filter(order=order).exists():
+                order_item,  _ = OrderItem.objects.get_or_create(order=order, product=product, quantity=quantity)
+
+            else:
+                order_item = OrderItem.objects.filter(order=order, product=product).values()
+                quantit = int(order_item[0]['quantity']) + int(quantity)
+                order_item.update(quantity=quantit) 
+
             return Response({'message':'Product added to cart'},status=200)
         
         else:
-            email = request.data.get('email')
-            product_id = request.data.get('product_id')
-            quantity = request.data.get('quantity')
-
             product = get_object_or_404(Product, id=product_id)
             cart = Cart(request)
-            cart.add(product=product, quantity=quantity)
+            cart.add(product=product, quantity=int(quantity))
 
             return Response({'message': f'Product added to cart successfully.'})
         
@@ -59,15 +60,15 @@ class OrderItemDetailView(APIView):
             if request.user.is_authenticated:
                 order = Order.objects.get(customer_id=request.user.id, complete=False )
                 order_item = OrderItem.objects.filter(order=order)
-                serializer =self.serializer_class(order_item, many=True)
 
+                serializer =self.serializer_class(order_item, many=True)
                 return Response({'data':serializer.data})
+            
             else:
                 order = Cart(request)
-                order.__iter__()
-                return Response(self.serializer_class(order, many=True).data)
-        
-        
+                order1 = order.__iter__()
+                return Response({'order': order.order})
+              
         except Order.DoesNotExist:
             return Response({'message':'This order DoesNotExist'},status=status.HTTP_404_NOT_FOUND)
 
@@ -124,10 +125,7 @@ class OrderTotalPriceView(APIView):
             order = Order.objects.get(customer=request.user, complete=False )
             total_price = order.calculate_total_price()
 
-            response_data = {
-                'total_price': total_price
-            }
-            return Response(response_data)
+            return Response({'total_price': total_price})
         
         else:
             cart = Cart(request) 
@@ -160,9 +158,7 @@ class OrderItemDeleteView(APIView):
 
         except OrderItem.DoesNotExist as e:
             return Response({'exception':e}, status=500)
-        
-
-        
+                
 
 
 class OrderShippingAdressView(APIView):
@@ -190,4 +186,90 @@ class OrderShippingAdressView(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
+
+
+class OrderConfirmView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def put(self, request):
+        if request.user.is_authenticated:
+            order = Order.objects.get(customer=request.user, complete=False )
+            order_items = OrderItem.objects.filter(order=order).values()
+
+            if order.status is not None:
+                return Response({'message': 'Order already confirmed'})
+
+            if len(order_items )> 0:
+
+                for i in order_items:
+                    id = i['product_id']
+                    iquantity = i['quantity']
+                    stoke = Stock.objects.filter(ptoduct_id_id=id).first()
+
+                    if stoke.quantity < iquantity :
+                        return Response({'message': f'Stock quantyti = {stoke.quantity} lover than order quantity = {iquantity}'}, status=500)  
+                    
+                    quantity = stoke.quantity - iquantity
+                    res_quantity = stoke.reserved_quantity + iquantity
+                    cart = Cart(request)
+
+                    stoke.__setattr__('quantity', quantity)
+                    stoke.__setattr__('reserved_quantity', res_quantity)
+                    stoke.save()
+
+                    order.__setattr__('status', 'VC')
+                    order.__setattr__('transaction_id', cart.secret())
+                    order.save()
+
+                return Response({'message': f'Order status changed on {order.status}','order_key':order.transaction_id}, status=200)   
+                          
+            else:
+                return Response({'message':'No products chosen'}, status=500)   
+                 
+        else:
+            cart = Cart(request)
+            ids = cart.order.keys()
+            if len(ids)>0:
+                for i in list(ids):
+                    stoke = Stock.objects.filter(ptoduct_id_id=i).first()
+                    stock_q = stoke.quantity
+                    quantity1 = cart.order[i]['quantity']
+
+                    if not stock_q >= quantity1 :
+                        return Response({'message': f'Stock quantyti = {stock_q} lover than order quantity {quantity1}'}, status=500)  
+                    
+                    quantity = stock_q - quantity1
+                    res_quantity = stock_q + quantity1
+
+                    stoke.__setattr__('quantity', quantity)
+                    stoke.__setattr__('reserved_quantity', res_quantity)
+                    stoke.save()
+                    cart.remove(Product.objects.get(id=i))
+
+                order_id = cart.secret()
+                return Response({'message': 'Product reserved .', 'order_key': order_id}, status=200)
+            
+            else:
+                return Response({'message':'No products chosen'}, status=500)
+
+
+
+class OrderStatusView(APIView):
+
+    def post(self,request):
+        order_id = request.data['order_key']
+        order = Order.objects.get(transaction_id=order_id)
+
+        return Response({'order_status':order.status, 'completed': order.complete})
+    
+
+    def put(self, request):
+        order_id = request.data['order_key']
+        order_status = request.data['status']
+
+        order = Order.objects.get(transaction_id=order_id)
+        status = order.status
+        order.__setattr__('status', order_status)
+        order.save()
+        return Response({'message': f'Order status {status} changed on {order.status}'})
 
