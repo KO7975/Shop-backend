@@ -8,12 +8,56 @@ from .models import (
     Product,
     Category,
     Stock,
-    Comment
+    Comment,
+    ProductAttribute,
+    Attribute,
     )
 
 
 
+class CategorySerializer(ModelSerializer):
+    children = serializers.SerializerMethodField()
+
+    def get_children(self, obj):
+        children = Category.objects.filter(children=obj)
+        serializer = CategorySerializer(children, many=True)
+        return serializer.data
+
+    class Meta:
+        model = Category
+        fields = (
+            'id',
+            'slug',
+            'children',
+            'image',
+            )
+
+
+
+class AttributeSerializer(ModelSerializer):
+    class Meta:
+        model= Attribute
+        fields = (
+            'id',
+            'name',
+        )
+
+
+class PropertiesSerializer(ModelSerializer):
+    attribute = AttributeSerializer()
+    class Meta:
+        model = ProductAttribute
+        fields =(
+            'id',
+            'attribute',
+            'value',
+        )
+
+
+
 class ProductSerializer(ModelSerializer):
+    categoty_id_id = CategorySerializer()
+    properties = PropertiesSerializer(many=True)
     likes = SerializerMethodField()
     dislikes = SerializerMethodField()
 
@@ -25,7 +69,7 @@ class ProductSerializer(ModelSerializer):
             'price',
             'description',
             'image',
-            'categoty_id',
+            'categoty_id_id',
             'properties',
             'likes',
             'dislikes',
@@ -65,36 +109,15 @@ class CommentSerializer(ModelSerializer):
 
 
 
-class CategorySerializer(ModelSerializer):
-
-    children = serializers.SerializerMethodField()
-
-    def get_children(self, obj):
-        children = Category.objects.filter(children=obj)
-        serializer = CategorySerializer(children, many=True)
-        return serializer.data
-
-    class Meta:
-        model = Category
-        fields = (
-            'id',
-            'slug',
-            'children',
-            'image',
-            )
-
-
-
 class StockSerializer(ModelSerializer):
 
     class Meta:
         model = Stock
         fields = (
-            'ptoduct_id',
+            'ptoduct_id_id',
             'quantity',
             'weight',
             'demensions',
-            'price',
             'defective',
             'created',
             'updated',

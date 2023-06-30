@@ -4,7 +4,12 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 import datetime
 
-from .serializer import CommentSerializer, ProductSerializer, CategorySerializer
+from .serializer import (
+    CommentSerializer,
+    ProductSerializer,
+    CategorySerializer,
+    StockSerializer,
+)
 
 from .models import (
     Product,
@@ -129,44 +134,36 @@ class ProductCategoryView(APIView):
     permission_classes = (AllowAny,)
 
     def get(self, request, category_id):
-        category_products = Product.objects.filter(categoty_id_id=category_id).values()
-        category = Category.objects.filter(perent_id=category_id)  
-        
-        all_categories = [i.id for i in category ]
-        all_categories.append(category_id)
+        category_products = Product.objects.filter(categoty_id_id=category_id)
+        category = Category.objects.filter(perent_id_id=category_id)
 
-        all_products = []
-        for id in all_categories:
-            for i in Product.objects.filter(categoty_id_id=id).values():
-                if i not in all_products:
-                    all_products.append(i)
+        sub_categories = {i.id: i.name for i in category}
+        sub_category_products = {i.id: ProductSerializer(Product.objects.filter(categoty_id_id=i.id), many=True).data
+                                  for i in category if i.id != category_id}
+                                           
+        serializer1 = ProductSerializer(category_products, many=True)
 
-        children_category = {i.name:i.id for i in category if i.id != category_id}
-        sub_products = {name:Product.objects.filter(categoty_id_id=id).values() for name,id in children_category.items()}
-        
-        if category_products or children_category:
-            return Response({
-                'all_products': all_products,
-                'parent': list(category_products),
-                'sub_categories': children_category,
-                'sub_products': sub_products
-                })
-        else:
-            return Response({'message': 'This category DoesNotExist'})
+        return Response({
+            'sub_categories': sub_categories,
+            'category_products': serializer1.data,
+            'sub_category_products': sub_category_products,
+            })
         
 
 
 class StockView(APIView):
     permission_classes = (AllowAny,)
 
-    def get(self, request, pk):
-        stock = Stock.objects.filter(id=pk).values().first()
-        product = Product.objects.get(stock=pk).name
+    def get(self, request, product_id):
+        try:
+            product = Product.objects.get(id=product_id)
+            stock = Stock.objects.filter(ptoduct_id=product).values().first()
+            print(stock)
+            serializer = StockSerializer(stock)
 
-        if len(stock) != 0 :
-            return Response({f'{product}': stock})
-        else:
-            return Response({'message': 'stock not found'})
+            return Response({'name':product.name, 'data': serializer.data})
+        except Exception as e:
+            return Response({'error': f'{e} Stock not found'})
 
 
 
