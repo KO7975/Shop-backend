@@ -9,7 +9,7 @@ import jwt
 import smtplib
 from email.message import EmailMessage
 from rest_framework_simplejwt.tokens import RefreshToken
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse, OpenApiExample, OpenApiRequest
 
 
 
@@ -84,17 +84,26 @@ class EmailVerifyView(APIView):
         permission_classes = [AllowAny]
 
         @extend_schema(
-                request=EmailVerifySerializer,
+                parameters=[
+                    OpenApiParameter(
+                        name='data',
+                        type=dict,
+                        examples=[
+                            OpenApiExample(
+                                'data',
+                                value={'token': 'token data', 'email': 'user@email.com'},
+                                request_only=True,
+                            ),
+                        ]
+                    ),
+                ],
                 description='User mail upproved from email. Make user is_active = True',
                 methods=["GET"],
-                parameters=[
-                    OpenApiParameter(name='refresh', description='Token', required=True),
-                    OpenApiParameter(name='email', description='Email adress', required=True),
-                ],
-                responses={200:OpenApiResponse( description='return token: refresh, access',),
-                        400:OpenApiResponse(description='Token not valid'),
-                        500:OpenApiResponse(description='UserDoesNotExist')
-                        }
+                responses={
+                    200:OpenApiResponse( description='return token: refresh, access',),
+                    400:OpenApiResponse(description='Token not valid'),
+                    500:OpenApiResponse(description='UserDoesNotExist')
+                }
         )
         def get(self, request):
             token = request.GET.get('token')

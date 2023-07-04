@@ -5,9 +5,14 @@ from django.shortcuts import get_object_or_404
 from .models import OrderItem, Order, ShippingAddres
 from .serializers import OrderItemSerializer, OrderShippingSerializer
 from product.models import Product, Stock
-from authentication.models import User
-from django.conf import settings
 from .cart import Cart
+from drf_spectacular.utils import (
+    inline_serializer,
+    extend_schema,
+    OpenApiParameter,
+    OpenApiResponse,
+    OpenApiExample
+    )
 
 
 
@@ -16,6 +21,9 @@ class AddToOrderView(APIView):
     queryset = OrderItem.objects.all()
     serializer_class = OrderItemSerializer
 
+    @extend_schema(
+            
+    )
     def post(self, request, product_id):
         product = Product.objects.get(id=product_id)
 
@@ -54,7 +62,16 @@ class OrderItemDetailView(APIView):
     permission_classes = [permissions.AllowAny]
     queryset = OrderItem.objects.all()
     serializer_class = OrderItemSerializer
+    ser = inline_serializer(name='Cart', fields={'price':'product price', 'total_price': 'total cart price'})
 
+    @extend_schema(
+            description=' Show products in users cart',
+            responses={
+                200: OpenApiResponse(description='Return cart data for authenticated user', response=serializer_class),
+                201: OpenApiResponse(description='Return cart data for non authenticated user', response=ser ),
+                404: OpenApiResponse(description='This order DoesNotExist')
+            }
+    )
     def get(self, request):
         try:
             if request.user.is_authenticated:
@@ -62,17 +79,20 @@ class OrderItemDetailView(APIView):
                 order_item = OrderItem.objects.filter(order=order)
 
                 serializer =self.serializer_class(order_item, many=True)
-                return Response({'data':serializer.data})
+                return Response(serializer.data, status=200)
             
             else:
                 order = Cart(request)
                 order1 = order.__iter__()
-                return Response({'order': order.order})
+                return Response({'order': order.order}, status=201)
               
         except Order.DoesNotExist:
             return Response({'message':'This order DoesNotExist'},status=status.HTTP_404_NOT_FOUND)
 
 
+    @extend_schema(
+            description='Delete Cart'
+    )
     def delete(self, request):
         try:
             if request.user.is_authenticated:
@@ -96,6 +116,31 @@ class OrderItemDetailView(APIView):
 class OrderItemQuantityChangeView(APIView):
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(
+            description='Change quantity of product by product_id and new quantity',
+            methods=['POST'],
+            parameters=[
+                OpenApiParameter(
+                    name='quantity',
+                    type=dict,
+                    description='Product Quantity',
+                    examples=[
+                        OpenApiExample(
+                            name='quantity',
+                            value={'quantity': 'int'},
+                            request_only=True,
+                            description='new quantity of product'
+                        ),
+                    ]
+                )
+            ],
+            responses={
+                200: OpenApiResponse(
+                    description='Return new item quantity for auth user "item_quantity":"int"'),
+                201: OpenApiResponse(
+                    description='Return new price for non auth user "new_price":"int"'),
+            }
+    )
     def post(self, request, product_id):
 
         quantity = request.data['quantity'] 
@@ -110,16 +155,22 @@ class OrderItemQuantityChangeView(APIView):
         else:
             cart = Cart(request)
             product = Product.objects.get(id=product_id)
-            cart.add(product=product,quantity=int(quantity), update_quantity=True)
+            cart.add(product=product, quantity=int(quantity), update_quantity=True)
             cart.save()
 
-            return Response({'new_price': cart.get_total_price()}, status=200)
+            return Response({'new_price': cart.get_total_price()}, status=201)
 
     
 
 class OrderTotalPriceView(APIView):
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(
+            description='Get order total price',
+            responses={
+                200: OpenApiResponse(description='Return "total_price": "total_price" ')
+            }
+    )
     def get(self, request, *args, **kwargs):
         if request.user.is_authenticated:
             order = Order.objects.get(customer=request.user, complete=False )
@@ -164,6 +215,15 @@ class OrderItemDeleteView(APIView):
 class OrderShippingAdressView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(
+        description='Order adress information save from form',
+        request=OrderShippingSerializer,
+        responses={
+            201: OpenApiResponse(description='Created'),
+            400: OpenApiResponse(description='HTTP_400_BAD_REQUEST'),
+            500: OpenApiResponse(description='Adress already exists in db'),            
+        }
+    )
     def post(self, request):
         data=request.data
         data['customer'] = request.user.pk
@@ -181,7 +241,7 @@ class OrderShippingAdressView(APIView):
             return Response(status=status.HTTP_201_CREATED)
         
         elif serializer.is_valid() and adress.exists():
-            return Response({'message': 'Adress already exists in db'})
+            return Response({'message': 'Adress already exists in db'}, status=500)
         
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -191,6 +251,10 @@ class OrderShippingAdressView(APIView):
 class OrderConfirmView(APIView):
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(
+            description='Confirm order',
+            methods=['PUT']
+    )
     def put(self, request):
         if request.user.is_authenticated:
             order = Order.objects.get(customer=request.user, complete=False )
@@ -256,6 +320,23 @@ class OrderConfirmView(APIView):
 
 class OrderStatusView(APIView):
 
+    @extend_schema(
+            description='order status',
+            methods=['POST'],
+            parameters=[
+                OpenApiParameter(
+                    name='order_key',
+                    type=dict,
+                    examples=[
+                        OpenApiExample(
+                            name='order_key',
+                            request_only=True,
+                            value={'order_key': 'int'}
+                        )
+                    ]
+                )
+            ]
+    )
     def post(self,request):
         order_id = request.data['order_key']
         order = Order.objects.get(transaction_id=order_id)
@@ -263,6 +344,26 @@ class OrderStatusView(APIView):
         return Response({'order_status':order.status, 'completed': order.complete})
     
 
+    @extend_schema(
+            description='Change order status',
+            methods=['PUT'],
+            parameters=[
+                OpenApiParameter(
+                    name='data',
+                    type=dict,
+                    examples=[
+                        OpenApiExample(
+                            name='data',
+                            request_only=True,
+                            value={'order_key': 'int', 'status': 'str'}
+                        )                       
+                    ]
+                )
+            ],
+            responses={
+                200: OpenApiResponse(description='return "message":"Order status WC changed on F"')
+            }
+    )
     def put(self, request):
         order_id = request.data['order_key']
         order_status = request.data['status']

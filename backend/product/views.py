@@ -4,11 +4,20 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 import datetime
 
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiParameter,
+    OpenApiResponse,
+    OpenApiExample
+    )
+
 from .serializer import (
     CommentSerializer,
     ProductSerializer,
     CategorySerializer,
     StockSerializer,
+    ProductLikeSerializer,
+    ProductDisLikeSerializer,
 )
 
 from .models import (
@@ -43,6 +52,10 @@ def get_new_added():
 class ProductsView(APIView):
     permission_classes = (AllowAny,)
 
+    @extend_schema(
+            description='Get all products',
+            responses=ProductSerializer(many=True),
+    )
     def get(self, request):
         products = Product.objects.all()
         top_10 = get_top_10_products()
@@ -59,9 +72,21 @@ class ProductsView(APIView):
             })
     
 
+
 class ProductView(APIView):
     permission_classes = (AllowAny, )
 
+    @extend_schema(
+            description = 'Return product details from product_id',
+            methods=["GET"],
+            responses={
+                200:OpenApiResponse(
+                    description='Product details',
+                    response=ProductSerializer
+                ),
+                500:OpenApiResponse(description='ProductDoesNotExist')
+            },
+    )
     def get(self, request, product_id):
         try:
             product = Product.objects.filter(id=product_id)
@@ -70,13 +95,36 @@ class ProductView(APIView):
             return Response({'product': serializer.data,})
         
         except Product.DoesNotExist:
-            return Response({'message': 'product not found'})
+            return Response({'message': 'product not found'}, status=500)
 
         
 
 class CommentAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+            description="Create comment for product",
+            methods=['POST'],
+            parameters= [
+                OpenApiParameter(
+                    name='content',
+                    required=True,
+                    description='Comment details',
+                    type=dict,
+                    examples=[ OpenApiExample(
+                        'Example',
+                        summary='Comment for product',
+                        description='Comment for product from request user',
+                        value={'content': 'Comment from form'},
+                        request_only=True,
+                        response_only=False
+                    )] 
+                )],
+            responses={
+                200: OpenApiResponse(description='Comment created'),
+                500:OpenApiResponse(description= 'error description')
+            }           
+    )
     def post(self, request, product_id):
         try:
             product = Product.objects.get(id=product_id)
@@ -97,6 +145,10 @@ class CommentAPIView(APIView):
             return Response({'error': str(e)}, status=500)
         
 
+    @extend_schema(
+            description='Get comment from product_id',
+            responses={200:OpenApiResponse(response=CommentSerializer, description= 'Comment from product_id'),}
+    )
     def get(self, request, product_id):
         try:
             product = Product.objects.get(id=product_id)
@@ -108,13 +160,21 @@ class CommentAPIView(APIView):
         serializer = CommentSerializer(comment, many=True)
 
         return Response(serializer.data)
-
-        
+    
            
 
 class CategoryView(APIView):
     permission_classes = (AllowAny,)
 
+    @extend_schema(
+            description='Categories description',
+            responses={
+                200:OpenApiResponse(
+                    response=CategorySerializer,
+                    description='All categories'
+                )
+            }
+    )
     def get(self, request):
         categories = Category.objects.all().values()
         cat = []
@@ -133,6 +193,16 @@ class CategoryView(APIView):
 class ProductCategoryView(APIView):
     permission_classes = (AllowAny,)
 
+    @extend_schema(
+            description='Product from category',
+            parameters=[
+                OpenApiParameter('sub_categories', ProductSerializer, response=True),
+                OpenApiParameter('category_products', ProductSerializer, response=True),
+                OpenApiParameter('sub_category_products',  ProductSerializer, response=True)],
+            responses={
+                200: OpenApiResponse( description='Products from category', response=ProductSerializer,)
+            }
+    )
     def get(self, request, category_id):
         category_products = Product.objects.filter(categoty_id_id=category_id)
         category = Category.objects.filter(perent_id_id=category_id)
@@ -154,6 +224,13 @@ class ProductCategoryView(APIView):
 class StockView(APIView):
     permission_classes = (AllowAny,)
 
+    @extend_schema(
+            description='Get Product data',
+            responses={
+                200: StockSerializer,
+                500: OpenApiResponse(description='Error description')
+            }
+    )
     def get(self, request, product_id):
         try:
             product = Product.objects.get(id=product_id)
@@ -163,13 +240,20 @@ class StockView(APIView):
 
             return Response({'name':product.name, 'data': serializer.data})
         except Exception as e:
-            return Response({'error': f'{e} Stock not found'})
+            return Response({'error': f'{e}'}, status=500)
 
 
 
 class ProductLikeView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+            description= 'Product like save',
+            responses= {
+                200: OpenApiResponse(description="Product liked successfully."),
+                500: OpenApiResponse(description="Product not found.")
+            }
+    )
     def post(self, request, product_id):
         try:
             product = Product.objects.get(id=product_id)
@@ -182,16 +266,23 @@ class ProductLikeView(APIView):
             
             like, created = Like.objects.get_or_create(user=request.user, product=product)
 
-            return Response({"message": "Product liked successfully."})
+            return Response({"message": "Product liked successfully."}, status=200)
 
         except Product.DoesNotExist:
-            return Response({"message": "Product not found."})
+            return Response({"message": "Product not found."}, status=500)
         
 
 
 class ProductDislikeView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+            description= 'Product disliked ',
+            responses= {
+                200: OpenApiResponse(description="Product disliked successfully."),
+                500: OpenApiResponse(description="Product not found.")
+            }
+    )
     def post(self, request, product_id):
         try:
             product = Product.objects.get(id=product_id)
@@ -215,6 +306,14 @@ class ProductDislikeView(APIView):
 class LikeCommentAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+            description= 'Comment liked ',
+            responses= {
+                200: OpenApiResponse(description="Comment liked successfully."),
+                201: OpenApiResponse(description="You have already liked this comment."),
+                500: OpenApiResponse(description="Comment not found.")
+            }
+    )
     def post(self, request, product_id, comment_id):
         try:
             comment = Comment.objects.get(id=comment_id)
@@ -229,8 +328,7 @@ class LikeCommentAPIView(APIView):
 
         like, created = CommentLike.objects.get_or_create(user=request.user, comment=comment)  
 
-        return Response({"message": "Comment liked successfully."})
-
+        return Response({"message": "Comment liked successfully."}, status=200)
 
 
 
@@ -238,12 +336,20 @@ class LikeCommentAPIView(APIView):
 class DislikeCommentAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+            description= 'Comment disliked ',
+            responses= {
+                200: OpenApiResponse(description="Comment disliked successfully."),
+                201: OpenApiResponse(description="You have already sisliked this comment."),
+                500: OpenApiResponse(description="Comment not found.")
+            }
+    )
     def post(self, request, product_id, comment_id):
         try:
             comment = Comment.objects.get(id=comment_id)
 
             if CommentDislike.objects.filter(user=request.user, comment=comment).exists():
-                return Response({"message": "You have already disliked this comment."})
+                return Response({"message": "You have already disliked this comment."}, status=201)
             
             elif CommentLike.objects.filter(user=request.user, comment=comment).exists():
                 CommentLike.objects.filter(user=request.user, comment=comment).delete()
@@ -251,10 +357,10 @@ class DislikeCommentAPIView(APIView):
             dislike = CommentDislike(user=request.user, comment=comment)
             dislike.save()
 
-            return Response({"message": "Comment disliked successfully."})
+            return Response({"message": "Comment disliked successfully."}, status=200)
 
         except Comment.DoesNotExist:
-            return Response({"message": "Comment not found."})
+            return Response({"message": "Comment not found."}, status=500)
 
 
 
