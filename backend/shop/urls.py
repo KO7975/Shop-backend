@@ -8,6 +8,9 @@ from .views import(
     AddToOrderView,
     OrderConfirmView,
     OrderStatusView,
+    NPCity,
+    NPAreas,
+    NPWarehouses,
 )   
 
 
@@ -23,6 +26,12 @@ urlpatterns = [
     path('remove/<int:pk>', OrderItemDeleteView.as_view(), name='remove'),
     
     path('adress', OrderShippingAdressView.as_view(), name='adress'),
+
+    path('np/areas', NPAreas.as_view(), name='np_areas'),
+
+    path('np/city', NPCity.as_view(), name='np_city'),
+
+    path('np/warehouses', NPWarehouses.as_view(), name='np_warehouses'),
 
     path('confirm', OrderConfirmView.as_view(), name='order_confirm'),
 
