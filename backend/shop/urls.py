@@ -11,6 +11,8 @@ from .views import(
     NPCity,
     NPAreas,
     NPWarehouses,
+    PayView,
+    PayCallbackView,
 )   
 
 
@@ -36,5 +38,9 @@ urlpatterns = [
     path('confirm', OrderConfirmView.as_view(), name='order_confirm'),
 
     path('status', OrderStatusView.as_view(), name='order_status'),
+
+    path('pay/', PayView.as_view(), name='pay_view'),
+
+    path('pay-callback/', PayCallbackView.as_view(), name='pay_callback'),
 
 ]

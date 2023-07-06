@@ -132,6 +132,10 @@ AUTHENTICATION_BACKENDS = [
 
 SHOP_SESSION_ID = 'shop'
 
+#LicPay config
+LIQPAY_PUBLIC_KEY = os.environ.get('LIQPAY_PUBLIC_KEY')
+LIQPAY_PRIVATE_KEY = os.environ.get('LIQPAY_PRIVATE_KEY')
+
 
 # Google configuration
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.environ.get('GOOGLE_OAUTH2_KEY')

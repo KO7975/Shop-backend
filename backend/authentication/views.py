@@ -41,7 +41,6 @@ def send_email_with_token(token, recipient_email):
         server.send_message(message)
 
 
-
 class RegisterView(APIView):
     permission_classes = (AllowAny,)
 
@@ -78,7 +77,6 @@ class RegisterView(APIView):
         
         return Response({'message': 'Email allready in db'}, status=201)
     
-
 
 class EmailVerifyView(APIView):
         permission_classes = [AllowAny]
@@ -131,7 +129,6 @@ class EmailVerifyView(APIView):
                 user = User.objects.get(email = email)
                 user.delete()
                 return Response({'message': f'{e}'}, status=500)
-
 
 
 

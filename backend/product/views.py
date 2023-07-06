@@ -72,7 +72,6 @@ class ProductsView(APIView):
             })
     
 
-
 class ProductView(APIView):
     permission_classes = (AllowAny, )
 
@@ -98,7 +97,6 @@ class ProductView(APIView):
             return Response({'message': 'product not found'}, status=500)
 
         
-
 class CommentAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -162,7 +160,6 @@ class CommentAPIView(APIView):
         return Response(serializer.data)
     
            
-
 class CategoryView(APIView):
     permission_classes = (AllowAny,)
 
@@ -187,7 +184,6 @@ class CategoryView(APIView):
         serializer = CategorySerializer(category, many=True)
 
         return Response(serializer.data)
-
 
 
 class ProductCategoryView(APIView):
@@ -220,7 +216,6 @@ class ProductCategoryView(APIView):
             })
         
 
-
 class StockView(APIView):
     permission_classes = (AllowAny,)
 
@@ -241,7 +236,6 @@ class StockView(APIView):
             return Response({'name':product.name, 'data': serializer.data})
         except Exception as e:
             return Response({'error': f'{e}'}, status=500)
-
 
 
 class ProductLikeView(APIView):
@@ -272,7 +266,6 @@ class ProductLikeView(APIView):
             return Response({"message": "Product not found."}, status=500)
         
 
-
 class ProductDislikeView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -302,7 +295,6 @@ class ProductDislikeView(APIView):
             return Response({"message": "Product not found."})
 
 
-
 class LikeCommentAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -329,7 +321,6 @@ class LikeCommentAPIView(APIView):
         like, created = CommentLike.objects.get_or_create(user=request.user, comment=comment)  
 
         return Response({"message": "Comment liked successfully."}, status=200)
-
 
 
 

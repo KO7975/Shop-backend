@@ -6,12 +6,15 @@ from .models import OrderItem, Order, ShippingAddres
 from .serializers import OrderItemSerializer, OrderShippingSerializer
 from product.models import Product, Stock
 from .cart import Cart
+from django.conf import settings
 from novaposhta import NovaPoshtaApi 
+from liqpay import LiqPay
 
 from drf_spectacular.utils import (
     inline_serializer,
     extend_schema,
     OpenApiParameter,
+    OpenApiRequest,
     OpenApiResponse,
     OpenApiExample
     )
@@ -26,6 +29,13 @@ class AddToOrderView(APIView):
     serializer_class = OrderItemSerializer
 
     @extend_schema(
+        description='Add product to cart',
+        parameters=[
+            OpenApiParameter(
+                name='quantity',
+                required=True,
+            )
+        ]
             
     )
     def post(self, request, product_id):
@@ -61,7 +71,6 @@ class AddToOrderView(APIView):
             return Response({'message': f'Product added to cart successfully.'})
         
 
-
 class OrderItemDetailView(APIView):
     permission_classes = [permissions.AllowAny]
     queryset = OrderItem.objects.all()
@@ -92,7 +101,7 @@ class OrderItemDetailView(APIView):
               
         except Order.DoesNotExist:
             return Response({'message':'This order DoesNotExist'},status=status.HTTP_404_NOT_FOUND)
-
+        
 
     @extend_schema(
             description='Delete Cart'
@@ -115,7 +124,6 @@ class OrderItemDetailView(APIView):
         except Order.DoesNotExist:
             return Response({'message':'This order DoesNotExist'},status=status.HTTP_404_NOT_FOUND)
         
-
 
 class OrderItemQuantityChangeView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -165,7 +173,6 @@ class OrderItemQuantityChangeView(APIView):
             return Response({'new_price': cart.get_total_price()}, status=201)
 
     
-
 class OrderTotalPriceView(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -187,8 +194,6 @@ class OrderTotalPriceView(APIView):
             return Response({'total_price': cart.get_total_price()})
 
     
-
-
 class OrderItemDeleteView(APIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = OrderItemSerializer
@@ -214,7 +219,6 @@ class OrderItemDeleteView(APIView):
         except OrderItem.DoesNotExist as e:
             return Response({'exception':e}, status=500)
                 
-
 
 class OrderShippingAdressView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -251,7 +255,6 @@ class OrderShippingAdressView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
 
-
 class NPAreas(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -266,7 +269,6 @@ class NPAreas(APIView):
 
         return Response(areas)
     
-
 
 class NPCity(APIView):
     permission_classes = [permissions.AllowAny]
@@ -293,7 +295,6 @@ class NPCity(APIView):
         return Response(city)
     
 
-
 class NPWarehouses(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -317,7 +318,6 @@ class NPWarehouses(APIView):
         warehouses = np.address.get_warehouses(city_name=city_name).json()
 
         return Response(warehouses)
-
 
 
 class OrderConfirmView(APIView):
@@ -389,7 +389,6 @@ class OrderConfirmView(APIView):
                 return Response({'message':'No products chosen'}, status=500)
 
 
-
 class OrderStatusView(APIView):
 
     @extend_schema(
@@ -446,3 +445,82 @@ class OrderStatusView(APIView):
         order.save()
         return Response({'message': f'Order status {status} changed on {order.status}'})
 
+
+class PayView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    @extend_schema(
+        description='Order payment information',
+        parameters=[
+            OpenApiParameter(
+                name='data',
+                type=dict,
+                examples=[
+                    OpenApiExample(
+                        description='Order information',
+                        name='data',
+                        value={'amount':'int', 'order_id': 'int', 'carrency': 'str'},
+                        request_only=True
+                    )
+                ]
+            )
+        ],
+        responses={
+            200: OpenApiResponse(description="Return parameters {'signature': signature, 'data': data}")
+        }
+    )
+    def get(self, request, *args, **kwargs):
+        liqpay = LiqPay(settings.LIQPAY_PUBLIC_KEY, settings.LIQPAY_PRIVATE_KEY)
+        amount = request.data['amount']
+        order_id = request.data['order_id']
+        carrency = request.data['carrency']
+        params = {
+            'action': 'pay',
+            'amount': amount,
+            'currency': carrency,
+            'description': 'Payment for clothes',
+            'order_id': order_id,
+            'version': '3',
+            'sandbox': 0, # sandbox mode, set to 1 to enable it
+            # 'server_url': 'https://test.com/billing/pay-callback/', # url to callback view
+        }
+        signature = liqpay.cnb_signature(params)
+        data = liqpay.cnb_data(params)
+        return Response( {'signature': signature, 'data': data})
+
+
+class PayCallbackView(APIView):
+    permission_classes = [permissions.AllowAny]
+        
+    @extend_schema(
+        description='Order payment Callback',
+        parameters=[
+            OpenApiParameter(
+                name='data',
+                type=dict,
+                examples=[
+                    OpenApiExample(
+                        description='Callback',
+                        name='data',
+                        value={'data':'data', 'signature': 'signature'},
+                        request_only=True
+                    )
+                ]
+            )
+        ],
+        responses={
+            200: OpenApiResponse(description="return {'data': response}")
+        }        
+    )
+    def post(self, request, *args, **kwargs):
+        liqpay = LiqPay(settings.LIQPAY_PUBLIC_KEY, settings.LIQPAY_PRIVATE_KEY)
+        data = request.data['data']
+        signature = request.data['signature']
+
+        sign = liqpay.str_to_sign(settings.LIQPAY_PRIVATE_KEY + data + settings.LIQPAY_PRIVATE_KEY)
+        
+        if sign == signature:
+            print('callback is valid')
+        response = liqpay.decode_data_from_str(data)
+        print('callback data', response)
+        return Response({'data': response})

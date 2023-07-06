@@ -59,6 +59,7 @@ class AttributeAdmin(admin.ModelAdmin):
 class ProductAttributeAdmin(admin.ModelAdmin):
     list_display = ('attribute', 'category','value')
 
+
 @admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin):
     list_display = ('user', 'product', 'content', 'created_at')

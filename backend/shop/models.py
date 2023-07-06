@@ -5,7 +5,6 @@ from authentication.models import User
 from product.models import Product
 
 
-
 class OrderItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
     order = models.ForeignKey('Order', on_delete=models.SET_NULL, null=True, blank=True)

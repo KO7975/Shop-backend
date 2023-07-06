@@ -1,4 +1,3 @@
-from rest_framework.fields import empty
 from rest_framework import serializers
 
 from rest_framework.serializers import (
@@ -16,7 +15,6 @@ from .models import (
     Like,
     DisLike
     )
-
 
 
 class CategorySerializer(ModelSerializer):
@@ -37,7 +35,6 @@ class CategorySerializer(ModelSerializer):
             )
 
 
-
 class AttributeSerializer(ModelSerializer):
     class Meta:
         model= Attribute
@@ -56,7 +53,6 @@ class PropertiesSerializer(ModelSerializer):
             'attribute',
             'value',
         )
-
 
 
 class ProductSerializer(ModelSerializer):
@@ -87,7 +83,6 @@ class ProductSerializer(ModelSerializer):
     def get_dislikes(self, obj):
         return obj.dislikes.count()
     
-
 
 class CommentSerializer(ModelSerializer):
     likes = SerializerMethodField()
@@ -128,12 +123,10 @@ class StockSerializer(ModelSerializer):
             )
         
 
-        
 class ProductLikeSerializer(ModelSerializer):
     class Meta:
         model = Like
         fields = '__all__'
-
 
 
 class ProductDisLikeSerializer(ModelSerializer):

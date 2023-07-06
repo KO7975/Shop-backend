@@ -7,7 +7,14 @@ class UserAdmin(UserAdmin):
     model = User
     # add_form = UserCreationForm
     # form = UserChangeForm
-    list_display = ["email","first_name", "last_name", "updated_at", "is_staff", "is_active"]
+    list_display = [
+        "email",
+        "first_name",
+        "last_name",
+        "updated_at",
+        "is_staff",
+        "is_active"
+        ]
     add_fieldsets = (
         *UserAdmin.add_fieldsets,
         (

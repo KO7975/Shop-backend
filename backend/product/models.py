@@ -101,7 +101,6 @@ class CommentDislike(models.Model):
         return f"Dislike by {self.user.username} on Comment {self.comment.id}"
 
 
-
 class  ProductAttribute(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True)
     attribute = models.ForeignKey('Attribute', on_delete=models.CASCADE) 
@@ -114,7 +113,6 @@ class  ProductAttribute(models.Model):
             return f'{self.category} {self.attribute.name} {self.value}'
     
     
-
 class Attribute(models.Model):
     name = models.CharField(max_length=200, blank=True, null=True)
     perent_id = models.ForeignKey('self', on_delete=models.CASCADE,  blank=True, null=True, related_name='children')
@@ -124,7 +122,6 @@ class Attribute(models.Model):
             return self.name
         else:
             return f'{self.perent_id} {self.name}'
-
 
 
 class Stock(models.Model):
