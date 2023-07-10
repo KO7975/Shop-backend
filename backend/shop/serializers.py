@@ -12,16 +12,16 @@ class ProductSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
-        fields = ('id','complete', 'transaction_id', 'status')
+        fields = ('id','complete', 'transaction_id', 'status', 'calculate_total_price')
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
-    product = ProductSerializer()
-    order = OrderSerializer()
+    product_id = ProductSerializer(many=True)
+    order_id = OrderSerializer()
 
     class Meta:
         model = OrderItem
-        fields = ('id', 'product', 'quantity', 'order')
+        fields = ('id', 'product_id', 'quantity', 'order_id')
 
 
 class OrderShippingSerializer(serializers.ModelSerializer):

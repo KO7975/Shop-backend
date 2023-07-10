@@ -3,7 +3,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from .models import OrderItem, Order, ShippingAddres
-from .serializers import OrderItemSerializer, OrderShippingSerializer
+from .serializers import OrderItemSerializer, OrderShippingSerializer, OrderSerializer
+from product.serializer import ProductSerializer
 from product.models import Product, Stock
 from .cart import Cart
 from django.conf import settings
@@ -88,16 +89,24 @@ class OrderItemDetailView(APIView):
     def get(self, request):
         try:
             if request.user.is_authenticated:
-                order = Order.objects.get(customer_id=request.user.id, complete=False )
-                order_item = OrderItem.objects.filter(order=order)
+                order = Order.objects.filter(customer_id=request.user.id, complete=False )
+                order_item = OrderItem.objects.filter(order=order.first()).values()
+                product = Product.objects.filter(id__in=order_item.values_list('product_id')).values()
+                print(order_item)
+                data = order_item.first()
 
-                serializer =self.serializer_class(order_item, many=True)
+                data['order_id'] = list(order.values())
+                data['product_id'] = list(product)
+                print(data)
+
+                serializer = OrderItemSerializer(data)
+                # serializer.is_valid(raise_exception=True)
                 return Response(serializer.data, status=200)
             
             else:
                 order = Cart(request)
                 order1 = order.__iter__()
-                return Response({'order': order.order}, status=201)
+                return Response({'data': order.order}, status=201)
               
         except Order.DoesNotExist:
             return Response({'message':'This order DoesNotExist'},status=status.HTTP_404_NOT_FOUND)
@@ -134,21 +143,14 @@ class OrderItemQuantityChangeView(APIView):
             parameters=[
                 OpenApiParameter(
                     name='quantity',
-                    type=dict,
+                    required=True,
                     description='Product Quantity',
-                    examples=[
-                        OpenApiExample(
-                            name='quantity',
-                            value={'quantity': 'int'},
-                            request_only=True,
-                            description='new quantity of product'
-                        ),
-                    ]
                 )
             ],
             responses={
                 200: OpenApiResponse(
-                    description='Return new item quantity for auth user "item_quantity":"int"'),
+                    response=OrderItemSerializer,
+                    description='Return item with apdated quantity for auth user '),
                 201: OpenApiResponse(
                     description='Return new price for non auth user "new_price":"int"'),
             }
@@ -158,12 +160,19 @@ class OrderItemQuantityChangeView(APIView):
         quantity = request.data['quantity'] 
 
         if request.user.is_authenticated:
-            order = Order.objects.get(customer_id=request.user.id, complete=False )
-            item = OrderItem.objects.filter(order=order, product_id=product_id).values()
+            product = Product.objects.filter(id=product_id).values().first()
+            order = Order.objects.filter(customer_id=request.user.id, complete=False ).first()
+            item = OrderItem.objects.filter(order=order, product=product_id).values()
 
-            item.update(quantity=quantity)
+            item.update(quantity=quantity) 
 
-            return Response({'item_quantity': item.values().first()['quantity']}, status=200)
+            data=item.first()
+            data['order_id'] = order
+            data['product_id']= product
+            serializer = OrderItemSerializer(data)
+            # serializer.is_valid(raise_exception=True)
+            return Response(serializer.data, status=200)
+        
         else:
             cart = Cart(request)
             product = Product.objects.get(id=product_id)
@@ -414,7 +423,6 @@ class OrderStatusView(APIView):
 
         return Response({'order_status':order.status, 'completed': order.complete})
     
-
     @extend_schema(
             description='Change order status',
             methods=['PUT'],
