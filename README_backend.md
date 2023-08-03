@@ -5,7 +5,7 @@
 1. Before starting you need clone project from githab 
 
 ```bash
-git clone https://github.com/Dream-team-by-team-challenge/online_shop.git
+git clone https://github.com/KO7975/Shop-backend.git
 ```
 
 2.
