@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from .models import Product, OrderItem, Order, ShippingAddres
-from rest_framework.exceptions import ValidationError
 
 
 class ProductSerializer(serializers.ModelSerializer):

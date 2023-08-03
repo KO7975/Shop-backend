@@ -1,5 +1,4 @@
 from django.db import models
-from django.db.models import Sum
 from django.conf import settings
 from authentication.models import User
 from product.models import Product

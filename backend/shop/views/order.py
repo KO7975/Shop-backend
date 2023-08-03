@@ -2,26 +2,19 @@ from rest_framework import permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-from .models import OrderItem, Order, ShippingAddres
-from .serializers import OrderItemSerializer, OrderShippingSerializer, OrderSerializer
+from shop.models import OrderItem, Order, ShippingAddres
+from shop.serializers import OrderItemSerializer, OrderShippingSerializer, OrderSerializer
 from product.serializer import ProductSerializer
 from product.models import Product, Stock
-from .cart import Cart
+from shop.cart import Cart
 from django.conf import settings
-from novaposhta import NovaPoshtaApi 
-from liqpay import LiqPay
-
 from drf_spectacular.utils import (
     inline_serializer,
     extend_schema,
     OpenApiParameter,
-    OpenApiRequest,
     OpenApiResponse,
     OpenApiExample
     )
-
-
-np = NovaPoshtaApi(api_key="102669df2e220870bd4296bcaec65938")
 
 
 class AddToOrderView(APIView):
@@ -262,71 +255,6 @@ class OrderShippingAdressView(APIView):
         
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-
-class NPAreas(APIView):
-    permission_classes = [permissions.AllowAny]
-
-    @extend_schema(
-            description='Get areass',
-            responses={
-                200:OpenApiResponse(description='Get full information about available areas')
-            }
-    )
-    def get(self, request):
-        areas = np.address.get_areas().json()
-
-        return Response(areas)
-    
-
-class NPCity(APIView):
-    permission_classes = [permissions.AllowAny]
-
-    @extend_schema(
-            description='Get city inform from city name',
-            parameters=[
-                OpenApiParameter(
-                    name='city',
-                    type=dict,
-                    examples=[
-                    OpenApiExample('city', value={'city': 'str'})
-                    ]
-                )
-            ],
-            responses={
-                200:OpenApiResponse(description='return city data for current city')
-            }            
-    )
-    def get(self, request):
-        city_name = request.data['city']
-        city = np.address.search_settlements(city_name=city_name, limit=10).json()
-
-        return Response(city)
-    
-
-class NPWarehouses(APIView):
-    permission_classes = [permissions.AllowAny]
-
-    @extend_schema(
-            description='Get warehouses inform from city name',
-            parameters=[
-                OpenApiParameter(
-                    name='city',
-                    type=dict,
-                    examples=[
-                    OpenApiExample('city', value={'city': 'str'}, request_only=True)
-                    ],
-                )
-            ],
-            responses={
-                200:OpenApiResponse(description='return warehouses data for current city')
-            }
-    )
-    def get(self, request):
-        city_name = request.data['city']
-        warehouses = np.address.get_warehouses(city_name=city_name).json()
-
-        return Response(warehouses)
 
 
 class OrderConfirmView(APIView):
@@ -452,83 +380,3 @@ class OrderStatusView(APIView):
         order.__setattr__('status', order_status)
         order.save()
         return Response({'message': f'Order status {status} changed on {order.status}'})
-
-
-class PayView(APIView):
-    permission_classes = [permissions.AllowAny]
-
-    @extend_schema(
-        description='Order payment information',
-        parameters=[
-            OpenApiParameter(
-                name='data',
-                type=dict,
-                examples=[
-                    OpenApiExample(
-                        description='Order information',
-                        name='data',
-                        value={'amount':'int', 'order_id': 'int', 'carrency': 'str'},
-                        request_only=True
-                    )
-                ]
-            )
-        ],
-        responses={
-            200: OpenApiResponse(description="Return parameters {'signature': signature, 'data': data}")
-        }
-    )
-    def get(self, request, *args, **kwargs):
-        liqpay = LiqPay(settings.LIQPAY_PUBLIC_KEY, settings.LIQPAY_PRIVATE_KEY)
-        amount = request.data['amount']
-        order_id = request.data['order_id']
-        carrency = request.data['carrency']
-        params = {
-            'action': 'pay',
-            'amount': amount,
-            'currency': carrency,
-            'description': 'Payment for clothes',
-            'order_id': order_id,
-            'version': '3',
-            'sandbox': 0, # sandbox mode, set to 1 to enable it
-            # 'server_url': 'https://test.com/billing/pay-callback/', # url to callback view
-        }
-        signature = liqpay.cnb_signature(params)
-        data = liqpay.cnb_data(params)
-        return Response( {'signature': signature, 'data': data})
-
-
-class PayCallbackView(APIView):
-    permission_classes = [permissions.AllowAny]
-        
-    @extend_schema(
-        description='Order payment Callback',
-        parameters=[
-            OpenApiParameter(
-                name='data',
-                type=dict,
-                examples=[
-                    OpenApiExample(
-                        description='Callback',
-                        name='data',
-                        value={'data':'data', 'signature': 'signature'},
-                        request_only=True
-                    )
-                ]
-            )
-        ],
-        responses={
-            200: OpenApiResponse(description="return {'data': response}")
-        }        
-    )
-    def post(self, request, *args, **kwargs):
-        liqpay = LiqPay(settings.LIQPAY_PUBLIC_KEY, settings.LIQPAY_PRIVATE_KEY)
-        data = request.data['data']
-        signature = request.data['signature']
-
-        sign = liqpay.str_to_sign(settings.LIQPAY_PRIVATE_KEY + data + settings.LIQPAY_PRIVATE_KEY)
-        
-        if sign == signature:
-            print('callback is valid')
-        response = liqpay.decode_data_from_str(data)
-        print('callback data', response)
-        return Response({'data': response})

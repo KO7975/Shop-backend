@@ -1,8 +1,6 @@
 from django.db import models
-from django.utils import timezone
-from django.utils.safestring import mark_safe
-
 from authentication.models import User
+from django.utils.safestring import mark_safe
 
 
 def img_tag(self):
@@ -24,11 +22,9 @@ class Category(models.Model):
         verbose_name_plural = 'categories'
         ordering = ('name',)
 
-
     def __str__(self) -> str:
         return f'{self.name}'
     
-
     def image_tag(self):
         return img_tag(self)
    

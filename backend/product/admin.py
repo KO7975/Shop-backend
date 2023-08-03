@@ -12,26 +12,25 @@ from .models import(
     )
 
 
-# @admin.register(Like)
-# class LikeAdmin(admin.ModelAdmin):
-#     list_display = ('name', 'created_at')
+@admin.register(Like)
+class LikeAdmin(admin.ModelAdmin):
+    list_display = ('name', 'created_at')
 
-#     def name(self, obj):
-#         return obj.user.username
+    def name(self, obj):
+        return obj.user.username
     
-# @admin.register(DisLike)
-# class DisLikeAdmin(admin.ModelAdmin):
-#     list_display = ('name', 'created_at')
+@admin.register(DisLike)
+class DisLikeAdmin(admin.ModelAdmin):
+    list_display = ('name', 'created_at')
 
-#     def name(self, obj):
-#         return obj.user.username
+    def name(self, obj):
+        return obj.user.username
 
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ('name', 'image_tag')
     prepopulated_fields = {"slug": ("name",)}
-    # filter_horizontal = ('products',)
 
 
 @admin.register(Product)

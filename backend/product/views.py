@@ -1,25 +1,19 @@
-from django.db.models import Count
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
-import datetime
-
+from .services import get_top_10_products, get_new_added
 from drf_spectacular.utils import (
     extend_schema,
     OpenApiParameter,
     OpenApiResponse,
     OpenApiExample
     )
-
 from .serializer import (
     CommentSerializer,
     ProductSerializer,
     CategorySerializer,
     StockSerializer,
-    ProductLikeSerializer,
-    ProductDisLikeSerializer,
 )
-
 from .models import (
     Product,
     Stock, 
@@ -30,23 +24,6 @@ from .models import (
     CommentLike,
     CommentDislike,
 )
-
-
-
-def get_top_10_products():
-    top_products = Product.objects.annotate(like_count=Count('like')).order_by('-like_count')[:10]
-    return top_products
-
-
-def get_new_added():
-    today = datetime.datetime.now().date()
-    start_date = today - datetime.timedelta(days=30)
-    new_10 = Product.objects.all().order_by('-updated')[:10]
-    days_30 = Product.objects.filter(updated__gte= start_date, updated__lte=today)
-    if days_30.count() > new_10.count():
-        return days_30
-    else:
-        return new_10
 
 
 class ProductsView(APIView):
@@ -331,7 +308,7 @@ class DislikeCommentAPIView(APIView):
             description= 'Comment disliked ',
             responses= {
                 200: OpenApiResponse(description="Comment disliked successfully."),
-                201: OpenApiResponse(description="You have already sisliked this comment."),
+                201: OpenApiResponse(description="You have already disliked this comment."),
                 500: OpenApiResponse(description="Comment not found.")
             }
     )
