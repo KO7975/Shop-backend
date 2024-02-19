@@ -1,5 +1,4 @@
 from django.db import models
-from django.conf import settings
 from authentication.models import User
 from product.models import Product
 
@@ -49,7 +48,3 @@ class ShippingAddres(models.Model):
 
     def __str__(self):
         return self.adress
-
-
-
-

@@ -13,10 +13,20 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         return token
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UsersSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'first_name', 'last_name', "gender", 'date_of_birth', 'email','phone', 'password']
+        fields = [
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'gender',
+            'date_of_birth',
+            'email',
+            'phone',
+            'password'
+        ]
 
 
 class EmailVerifySerializer(serializers.ModelSerializer):
@@ -26,3 +36,7 @@ class EmailVerifySerializer(serializers.ModelSerializer):
     class Meta():
         model = User
         fields = ['token', 'email']
+
+
+class SocialAuthSerializer(serializers.Serializer):
+    access_token = serializers.CharField()

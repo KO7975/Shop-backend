@@ -5,10 +5,9 @@ from django.conf import settings
 from liqpay import LiqPay
 from drf_spectacular.utils import (
     extend_schema,
-    OpenApiParameter,
     OpenApiResponse,
-    OpenApiExample
     )
+from shop.schema import PAY_DATA_PARAMS
 
 
 class PayView(APIView):
@@ -16,22 +15,11 @@ class PayView(APIView):
 
     @extend_schema(
         description='Order payment information',
-        parameters=[
-            OpenApiParameter(
-                name='data',
-                type=dict,
-                examples=[
-                    OpenApiExample(
-                        description='Order information',
-                        name='data',
-                        value={'amount':'int', 'order_id': 'int', 'carrency': 'str'},
-                        request_only=True
-                    )
-                ]
-            )
-        ],
+        parameters=[PAY_DATA_PARAMS],
         responses={
-            200: OpenApiResponse(description="Return parameters {'signature': signature, 'data': data}")
+            200: OpenApiResponse(
+                description="Return parameters {'signature': signature, 'data': data}"
+            )
         }
     )
     def get(self, request, *args, **kwargs):
@@ -59,20 +47,7 @@ class PayCallbackView(APIView):
         
     @extend_schema(
         description='Order payment Callback',
-        parameters=[
-            OpenApiParameter(
-                name='data',
-                type=dict,
-                examples=[
-                    OpenApiExample(
-                        description='Callback',
-                        name='data',
-                        value={'data':'data', 'signature': 'signature'},
-                        request_only=True
-                    )
-                ]
-            )
-        ],
+        parameters=[PAY_DATA_PARAMS],
         responses={
             200: OpenApiResponse(description="return {'data': response}")
         }        
@@ -87,5 +62,4 @@ class PayCallbackView(APIView):
         if sign == signature:
             print('callback is valid')
         response = liqpay.decode_data_from_str(data)
-        print('callback data', response)
         return Response({'data': response})

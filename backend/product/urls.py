@@ -2,6 +2,7 @@ from django.urls import path
 from .views import (
     ProductView,
     ProductsView,
+    TopNew10ProdactsView,
     ProductLikeView,
     ProductDislikeView,
     CategoryView,
@@ -14,17 +15,18 @@ from .views import (
 
 
 urlpatterns = [
-    path('from_category/<int:category_id>', ProductCategoryView.as_view(), name='from_category'),
+    path('from_category', ProductCategoryView.as_view(), name='from_category'),
     path('', ProductsView.as_view(), name='products'),
+    path('top_new_10', TopNew10ProdactsView.as_view(), name='top_new_10'),
 
     path('categories', CategoryView.as_view(), name='categories'),
-    path('stock/<int:product_id>', StockView.as_view(), name='stock'),
+    path('stock/', StockView.as_view(), name='stock'),
 
-    path('item/<int:product_id>/', ProductView.as_view(), name='product'),
-    path('item/<int:product_id>/like', ProductLikeView.as_view(), name='like'),
-    path('item/<int:product_id>/dislike', ProductDislikeView.as_view(), name='dislike'),
+    path('item/', ProductView.as_view(), name='product'),
+    path('item/like', ProductLikeView.as_view(), name='like'),
+    path('item/dislike', ProductDislikeView.as_view(), name='dislike'),
 
-    path('item/<int:product_id>/comments/', CommentAPIView.as_view(), name='comment'),
-    path('item/<int:product_id>/comments/<int:comment_id>/like/', LikeCommentAPIView.as_view(), name='like-comment'),
-    path('item/<int:product_id>/comments/<int:comment_id>/dislike/', DislikeCommentAPIView.as_view(), name='dislike-comment'),
+    path('item/comments', CommentAPIView.as_view(), name='comment'),
+    path('item/comments/like', LikeCommentAPIView.as_view(), name='like-comment'),
+    path('item/comments/dislike', DislikeCommentAPIView.as_view(), name='dislike-comment'),
 ]

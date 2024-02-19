@@ -131,3 +131,18 @@ class ProductDisLikeSerializer(ModelSerializer):
     class Meta:
         model = DisLike
         fields = '__all__'
+
+
+class TopNew10ProdactsResponseSerializer(ModelSerializer):
+    new_10 = ProductSerializer(many=True)
+    top_10 = ProductSerializer(many=True)
+
+    class Meta:
+        model = Product
+        fields = ('new_10', 'top_10')
+
+
+class CommentRequestSerializer(ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = ('content', 'product')

@@ -1,14 +1,13 @@
 import os
-from rest_framework import permissions
+from rest_framework import permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from novaposhta import NovaPoshtaApi 
 from drf_spectacular.utils import (
     extend_schema,
-    OpenApiParameter,
     OpenApiResponse,
-    OpenApiExample
     )
+from shop.schema import CITY_PARAMETER
 
 
 np = NovaPoshtaApi(api_key=os.getenv("NOVA_POSHTA_API_KEY"))
@@ -34,15 +33,7 @@ class NPCity(APIView):
 
     @extend_schema(
             description='Get city inform from city name',
-            parameters=[
-                OpenApiParameter(
-                    name='city',
-                    type=dict,
-                    examples=[
-                    OpenApiExample('city', value={'city': 'str'})
-                    ]
-                )
-            ],
+            parameters=[CITY_PARAMETER],
             responses={
                 200:OpenApiResponse(description='return city data for current city')
             }            
@@ -51,7 +42,10 @@ class NPCity(APIView):
         city_name = request.data['city']
         city = np.address.search_settlements(city_name=city_name, limit=10).json()
 
-        return Response(city)
+        return Response(
+            city,
+            status.HTTP_200_OK
+        )
     
 
 class NPWarehouses(APIView):
@@ -59,15 +53,7 @@ class NPWarehouses(APIView):
 
     @extend_schema(
             description='Get warehouses inform from city name',
-            parameters=[
-                OpenApiParameter(
-                    name='city',
-                    type=dict,
-                    examples=[
-                    OpenApiExample('city', value={'city': 'str'}, request_only=True)
-                    ],
-                )
-            ],
+            parameters=[CITY_PARAMETER],
             responses={
                 200:OpenApiResponse(description='return warehouses data for current city')
             }
@@ -76,4 +62,7 @@ class NPWarehouses(APIView):
         city_name = request.data['city']
         warehouses = np.address.get_warehouses(city_name=city_name).json()
 
-        return Response(warehouses)
+        return Response(
+            warehouses,
+            status.HTTP_200_OK
+        )
