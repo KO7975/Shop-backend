@@ -1,6 +1,5 @@
 # **Simple instruction**
 
-## How to start django project shop backend
 
 1. Before starting you need clone project from githab 
 
@@ -8,30 +7,45 @@
 git clone https://github.com/KO7975/Shop-backend.git
 ```
 
-2.
+## How to start django project shop backend in Docker container
+
+1. Go to the directory with the Dockerfile and Create Docker image
+```bash
+docker build -t shop .
+```
+
+2. Run docker container 
+```bash
+docker run -d -p 8000:8000 --name PINI shop
+```
+
+## Alternative start app on local machine
+
+1. 
 ```bash
 cd backend
 ```
 
-3. Create a virtual environment for the project:
+2. Create a virtual environment for the project:
 
 ```bash
 python -m venv env
 ```
 
-4. Activate the virtual environment:
+3. Activate the virtual environment:
 
 ```bash
 source env/bin/activate
 ```
 
-5. Install the project dependencies:
+4. Install the project dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-6. For propper work in file .env fill your secretkeys :
+5. For propper work in file .env fill your secretkeys 
+   (remember when in production keep this values in secret):
 
    * SECRET_KEY= random generated key
    * EMAIL_HOST_USER= your email adress
@@ -41,13 +55,13 @@ pip install -r requirements.txt
    * GOOGLE_OAUTH2_KEY = from google generated
    * GOOGLE_OAUTH2_SECRET = from google generated
 
-7. Start the development server:
+6. Start the development server:
 
 ```bash
 python manage.py runserver
 ```
 
-8. You can visit admin page 
+7. You can visit admin page 
 
 ```bash
 http://127.0.0.1:8000/admin
@@ -63,6 +77,6 @@ PASSWORD:
  123456
 ```
 
-9. Use this [url](http://127.0.0.1:8000/schema/swagger-ui/)  into your browser and you will see all api functionality
+8. Use this [url](http://127.0.0.1:8000/)  into your browser
 
-10. If you have questions please contact me by email: kiosya17@gmail.com or in telegram: @Pirat_17
+9. If you have questions please contact me by email: kiosya17@gmail.com or in telegram: @Pirat_17
